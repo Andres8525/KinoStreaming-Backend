@@ -162,6 +162,21 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void viewerTokenCannotAccessCreatorEndpoints() throws Exception {
+        String registerResponse = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(
+                                "Viewer Role", "viewer-role@example.com", "secure-password-1", UserRole.CREATOR))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        AuthResponse authResponse = objectMapper.readValue(registerResponse, AuthResponse.class);
+
+        mockMvc.perform(get("/api/creator/videos")
+                        .header("Authorization", "Bearer " + authResponse.accessToken()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
