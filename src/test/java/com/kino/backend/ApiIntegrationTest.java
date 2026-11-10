@@ -107,6 +107,31 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void loginReturnsBearerTokenAndBasicProfile() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(
+                                "Login Viewer", "login-viewer@example.com", "secure-password-1", null))))
+                .andExpect(status().isCreated());
+
+        String response = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("login-viewer@example.com", "secure-password-1"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.email").value("login-viewer@example.com"))
+                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andReturn().getResponse().getContentAsString();
+
+        AuthResponse authResponse = objectMapper.readValue(response, AuthResponse.class);
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Authorization", "Bearer " + authResponse.accessToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
