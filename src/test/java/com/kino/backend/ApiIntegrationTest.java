@@ -91,6 +91,18 @@ class ApiIntegrationTest {
                 .andExpect(header().string("Access-Control-Expose-Headers", "Authorization"));
     }
 
+    @Test
+    void corsPreflightAllowsAngularRegistrationPost() throws Exception {
+        mockMvc.perform(options("/api/auth/register")
+                        .header("Origin", "http://localhost:4200")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+                .andExpect(header().string("Access-Control-Allow-Methods",
+                        org.hamcrest.Matchers.containsStringIgnoringCase("POST")));
+    }
+
         @Test
         void loginWithIncorrectPasswordReturnsUnauthorizedJson() throws Exception {
                 mockMvc.perform(post("/api/auth/login")
