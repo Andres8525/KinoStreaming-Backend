@@ -31,6 +31,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     private static final List<String> ALLOWED_ORIGINS = List.of("http://localhost:4200");
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
+    private static final List<String> EXPOSED_HEADERS = List.of("Authorization");
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -38,6 +39,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .allowedOrigins(ALLOWED_ORIGINS.toArray(String[]::new))
                 .allowedMethods(ALLOWED_METHODS.toArray(String[]::new))
                 .allowedHeaders(ALLOWED_HEADERS.toArray(String[]::new))
+                .exposedHeaders(EXPOSED_HEADERS.toArray(String[]::new))
                 .allowCredentials(true)
                 .maxAge(3600);
     }
@@ -48,6 +50,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         configuration.setAllowedOrigins(ALLOWED_ORIGINS);
         configuration.setAllowedMethods(ALLOWED_METHODS);
         configuration.setAllowedHeaders(ALLOWED_HEADERS);
+        configuration.setExposedHeaders(EXPOSED_HEADERS);
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

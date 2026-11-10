@@ -83,6 +83,14 @@ class ApiIntegrationTest {
                         org.hamcrest.Matchers.containsStringIgnoringCase("authorization")));
     }
 
+    @Test
+    void corsResponseExposesAuthorizationHeader() throws Exception {
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Origin", "http://localhost:4200"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Access-Control-Expose-Headers", "Authorization"));
+    }
+
         @Test
         void loginWithIncorrectPasswordReturnsUnauthorizedJson() throws Exception {
                 mockMvc.perform(post("/api/auth/login")
