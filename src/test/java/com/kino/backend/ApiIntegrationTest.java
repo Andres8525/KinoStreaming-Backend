@@ -177,6 +177,13 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void protectedFeedRejectsMalformedJwt() throws Exception {
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Authorization", "Bearer not-a-valid-jwt"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
