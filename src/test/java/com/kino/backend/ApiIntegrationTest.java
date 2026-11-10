@@ -184,6 +184,22 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void protectedFeedRejectsTokenForDeletedAccount() throws Exception {
+        String registerResponse = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(
+                                "Removed Viewer", "removed-viewer@example.com", "secure-password-1", null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        AuthResponse authResponse = objectMapper.readValue(registerResponse, AuthResponse.class);
+        userRepository.delete(userRepository.findByEmailIgnoreCase("removed-viewer@example.com").orElseThrow());
+
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Authorization", "Bearer " + authResponse.accessToken()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
