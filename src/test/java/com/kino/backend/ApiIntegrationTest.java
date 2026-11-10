@@ -72,6 +72,23 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void registrationRejectsAnEmailThatIsAlreadyRegistered() throws Exception {
+        String payload = objectMapper.writeValueAsString(
+                new RegisterRequest("Duplicate Viewer", "duplicate@example.com", "secure-password-1", null));
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("El correo ya está registrado"));
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
