@@ -132,6 +132,22 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void loginAcceptsEmailInDifferentLetterCase() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(
+                                "Case Viewer", "case-viewer@example.com", "secure-password-1", null))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("CASE-VIEWER@EXAMPLE.COM", "secure-password-1"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("case-viewer@example.com"));
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
