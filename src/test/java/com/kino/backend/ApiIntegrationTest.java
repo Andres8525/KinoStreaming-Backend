@@ -148,6 +148,20 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void registrationRejectsPasswordsBelowMinimumLength() throws Exception {
+        String payload = objectMapper.writeValueAsString(Map.of(
+                "displayName", "Invalid Viewer",
+                "email", "invalid-password@example.com",
+                "password", "short"));
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.password").exists());
+    }
+
+    @Test
     void corsPreflightAllowsAngularAuthorizationHeader() throws Exception {
         mockMvc.perform(options("/api/feed/recommendations")
                         .header("Origin", "http://localhost:4200")
