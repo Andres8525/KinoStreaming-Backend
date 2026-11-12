@@ -31,7 +31,28 @@ $env:JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long"
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`. CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header.
+The API listens on `http://localhost:8080`. CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list to allow other origins.
+
+`.env.example` lists every supported environment variable. `JWT_SECRET` must be at least 32 bytes long; the application refuses to start otherwise.
+
+Run the test suite (uses an in-memory H2 database, no PostgreSQL needed):
+
+```powershell
+mvn test
+```
+
+### Docker
+
+Build and run the API as a container:
+
+```powershell
+docker build -t kino-backend .
+docker run --rm -p 8080:8080 `
+  -e DB_URL="jdbc:postgresql://host.docker.internal:5432/kino" `
+  -e DB_USERNAME="kino" -e DB_PASSWORD="kino_dev_password" `
+  -e JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long" `
+  kino-backend
+```
 
 ## Endpoints
 
