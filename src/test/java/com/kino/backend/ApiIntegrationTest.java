@@ -173,7 +173,9 @@ class ApiIntegrationTest {
 
         mockMvc.perform(get("/api/creator/videos")
                         .header("Authorization", "Bearer " + authResponse.accessToken()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("No tienes permisos para realizar esta acción"));
     }
 
     @Test
