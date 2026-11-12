@@ -1,5 +1,6 @@
 package com.kino.backend;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -430,6 +431,24 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/videos/search").param("q", "   "))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void creatorCanDeleteOnlyOwnVideos() throws Exception {
+        var owner = createUser("Delete Owner", "delete-owner@example.com", UserRole.CREATOR);
+        var otherCreator = createUser("Delete Other", "delete-other@example.com", UserRole.CREATOR);
+        var viewer = createUser("Delete Viewer", "delete-viewer@example.com", UserRole.VIEWER);
+        UUID videoId = publishVideo(owner, "Video to delete");
+        recordView(videoId, viewer);
+
+        mockMvc.perform(delete("/api/creator/videos/{videoId}", videoId)
+                        .header("Authorization", "Bearer " + jwtService.generateToken(otherCreator)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/creator/videos/{videoId}", videoId)
+                        .header("Authorization", "Bearer " + jwtService.generateToken(owner)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/videos/{videoId}", videoId))
+                .andExpect(status().isNotFound());
     }
 
     @Test
