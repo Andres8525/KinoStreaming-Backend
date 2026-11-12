@@ -3,7 +3,6 @@ package com.kino.backend.controller;
 import com.kino.backend.dto.FeedResponse;
 import com.kino.backend.model.User;
 import com.kino.backend.service.FeedService;
-import java.security.Principal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +19,7 @@ public class FeedController {
     }
 
     @GetMapping("/recommendations")
-    public FeedResponse recommendations(@AuthenticationPrincipal User user, Principal principal) {
-        return feedService.recommendations(user.getId(), principal.getName());
+    public FeedResponse recommendations(@AuthenticationPrincipal User user) {
+        return feedService.recommendations(user.getId(), user.getEmail());
     }
 }
