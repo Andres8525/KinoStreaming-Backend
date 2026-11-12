@@ -20,6 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FeedService {
 
+    static final String STRATEGY = "hybrid-collaborative-popularity";
+    private static final int FEED_SIZE = 20;
+    private static final long MAX_POPULARITY_SCORE = 1_000_000L;
+    private static final long MAX_COLLABORATIVE_SCORE = 100_000L;
+    private static final long COLLABORATIVE_WEIGHT = 10L;
+    private static final long MAX_WATCH_MINUTES_SCORE = 10L;
+
     private final VideoRepository videoRepository;
     private final InteractionRepository interactionRepository;
 
@@ -54,21 +61,21 @@ public class FeedService {
                 .sorted(Comparator
                         .comparingLong((Video video) -> rank(video, collaborativeScores)).reversed()
                         .thenComparing(Video::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
+                .limit(FEED_SIZE)
                 .toList();
 
-        return new FeedResponse("hybrid-collaborative-popularity", Instant.now(),
+        return new FeedResponse(STRATEGY, Instant.now(),
                 rankedVideos.stream().map(VideoResponse::from).toList());
     }
 
     private long rank(Video video, Map<UUID, Long> collaborativeScores) {
-        long popularityScore = Math.min(video.getViewCount(), 1_000_000L);
-        long collaborativeScore = Math.min(collaborativeScores.getOrDefault(video.getId(), 0L), 100_000L);
-        return popularityScore + collaborativeScore * 10L;
+        long popularityScore = Math.min(video.getViewCount(), MAX_POPULARITY_SCORE);
+        long collaborativeScore = Math.min(collaborativeScores.getOrDefault(video.getId(), 0L), MAX_COLLABORATIVE_SCORE);
+        return popularityScore + collaborativeScore * COLLABORATIVE_WEIGHT;
     }
 
     private long score(Interaction interaction) {
         long ratingScore = interaction.getRating() == null ? 1 : Math.max(1, interaction.getRating());
-        return ratingScore + Math.min(interaction.getWatchedSeconds() / 60L, 10L);
+        return ratingScore + Math.min(interaction.getWatchedSeconds() / 60L, MAX_WATCH_MINUTES_SCORE);
     }
 }
