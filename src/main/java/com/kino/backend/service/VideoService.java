@@ -61,16 +61,16 @@ public class VideoService {
     public VideoResponse findById(UUID videoId) {
         return videoRepository.findById(videoId)
                 .map(VideoResponse::from)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video"));
+                .orElseThrow(VideoService::videoNotFound);
     }
 
     @Transactional
     public long recordView(UUID videoId, User viewer) {
         if (videoRepository.incrementViewCount(videoId) == 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video");
+            throw videoNotFound();
         }
         Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video"));
+                .orElseThrow(VideoService::videoNotFound);
         if (!interactionRepository.existsByUser_IdAndVideo_Id(viewer.getId(), videoId)) {
             interactionRepository.save(new Interaction(viewer, video, null, 0));
         }
@@ -96,5 +96,9 @@ public class VideoService {
                 .limit(5)
                 .toList();
         return new CreatorAnalyticsResponse(videos.size(), totalViews, topVideos);
+    }
+
+    private static ResponseStatusException videoNotFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video");
     }
 }
