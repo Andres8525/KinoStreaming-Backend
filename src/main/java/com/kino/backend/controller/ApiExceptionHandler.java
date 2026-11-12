@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -49,6 +50,11 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
         return error(HttpStatus.METHOD_NOT_ALLOWED,
                 "Método " + exception.getMethod() + " no permitido en esta ruta", Map.of());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResource() {
+        return error(HttpStatus.NOT_FOUND, "La ruta solicitada no existe", Map.of());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
