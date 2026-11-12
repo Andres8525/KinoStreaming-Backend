@@ -85,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
                         .requestMatchers("/api/creator/**").hasRole("CREATOR")
                         .requestMatchers("/api/feed/**").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
