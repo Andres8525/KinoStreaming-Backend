@@ -171,6 +171,20 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void invalidVideoIdReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/videos/{videoId}", "not-a-uuid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.videoId").exists());
+    }
+
+    @Test
+    void unknownVideoIdReturnsNotFound() throws Exception {
+        mockMvc.perform(get("/api/videos/{videoId}", UUID.randomUUID()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No se encontró el video"));
+    }
+
+    @Test
     void viewerTokenCannotAccessCreatorEndpoints() throws Exception {
         String registerResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
