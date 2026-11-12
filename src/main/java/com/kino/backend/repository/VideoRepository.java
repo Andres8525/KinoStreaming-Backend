@@ -2,6 +2,7 @@ package com.kino.backend.repository;
 
 import com.kino.backend.model.Video;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,6 +16,7 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
     List<Video> findAllByOrderByViewCountDescCreatedAtDesc();
     List<Video> findAllByOrderByViewCountDescCreatedAtDesc(Pageable pageable);
     List<Video> findByTitleContainingIgnoreCaseOrderByCreatedAtDesc(String title, Pageable pageable);
+    Optional<Video> findByIdAndCreator_EmailIgnoreCase(UUID id, String email);
 
     @Modifying
     @Query("update Video video set video.viewCount = video.viewCount + 1 where video.id = :videoId")

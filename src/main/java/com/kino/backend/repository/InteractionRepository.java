@@ -14,4 +14,6 @@ public interface InteractionRepository extends JpaRepository<Interaction, UUID> 
     List<Interaction> findByVideo_IdIn(Collection<UUID> videoIds);
 
     List<Interaction> findByUser_IdIn(Collection<UUID> userIds);
+
+    void deleteByVideo_Id(UUID videoId);
 }
