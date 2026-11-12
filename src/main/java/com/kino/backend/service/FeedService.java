@@ -9,11 +9,11 @@ import com.kino.backend.repository.VideoRepository;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,22 +30,20 @@ public class FeedService {
 
     @Transactional(readOnly = true)
     public FeedResponse recommendations(UUID userId, String email) {
-        List<Interaction> interactions = interactionRepository.findAll();
-        Set<UUID> watchedVideoIds = interactions.stream()
-                .filter(interaction -> interaction.getUser().getId().equals(userId))
+        Set<UUID> watchedVideoIds = interactionRepository.findByUser_Id(userId).stream()
                 .map(interaction -> interaction.getVideo().getId())
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
-        Set<UUID> similarViewerIds = new HashSet<>();
-        interactions.stream()
-                .filter(interaction -> watchedVideoIds.contains(interaction.getVideo().getId()))
-                .map(interaction -> interaction.getUser().getId())
-                .filter(otherUserId -> !otherUserId.equals(userId))
-                .forEach(similarViewerIds::add);
+        Set<UUID> similarViewerIds = watchedVideoIds.isEmpty() ? Set.of()
+                : interactionRepository.findByVideo_IdIn(watchedVideoIds).stream()
+                        .map(interaction -> interaction.getUser().getId())
+                        .filter(otherUserId -> !otherUserId.equals(userId))
+                        .collect(Collectors.toSet());
 
         Map<UUID, Long> collaborativeScores = new HashMap<>();
-        interactions.stream()
-                .filter(interaction -> similarViewerIds.contains(interaction.getUser().getId()))
+        List<Interaction> similarInteractions = similarViewerIds.isEmpty() ? List.of()
+                : interactionRepository.findByUser_IdIn(similarViewerIds);
+        similarInteractions.stream()
                 .filter(interaction -> !watchedVideoIds.contains(interaction.getVideo().getId()))
                 .forEach(interaction -> collaborativeScores.merge(
                         interaction.getVideo().getId(), score(interaction), Long::sum));
