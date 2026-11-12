@@ -11,10 +11,12 @@ public record VideoResponse(
         String title,
         String description,
         String videoUrl,
+        String thumbnailUrl,
         List<String> tags,
         BigDecimal accessPrice,
         BigDecimal suggestedDonation,
         CreatorSummaryResponse creator,
+        long viewCount,
         Instant createdAt) {
 
     public VideoResponse {
@@ -24,7 +26,8 @@ public record VideoResponse(
     public static VideoResponse from(Video video) {
         return new VideoResponse(
                 video.getId(), video.getTitle(), video.getDescription(), video.getVideoUrl(),
+                video.getThumbnailUrl(),
                 video.getTags(), video.getAccessPrice(), video.getSuggestedDonation(),
-                CreatorSummaryResponse.from(video.getCreator()), video.getCreatedAt());
+                CreatorSummaryResponse.from(video.getCreator()), video.getViewCount(), video.getCreatedAt());
     }
 }
