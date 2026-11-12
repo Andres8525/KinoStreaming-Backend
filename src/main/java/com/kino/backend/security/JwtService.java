@@ -14,12 +14,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
+    static final int MIN_SECRET_BYTES = 32;
+
     private final SecretKey signingKey;
     private final long expirationMillis;
 
     public JwtService(
             @Value("${kino.jwt.secret}") String secret,
             @Value("${kino.jwt.expiration-ms:86400000}") long expirationMillis) {
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "kino.jwt.secret (JWT_SECRET) must be at least " + MIN_SECRET_BYTES + " bytes long");
+        }
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMillis = expirationMillis;
     }
