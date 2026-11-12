@@ -419,6 +419,17 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.recommendations[0].id").value(suggestedVideo.toString()));
     }
 
+    @Test
+    void recommendationsExcludeCreatorsOwnVideos() throws Exception {
+        var creator = createUser("Self Feed Creator", "self-feed-creator@example.com", UserRole.CREATOR);
+        UUID ownVideo = publishVideo(creator, "Own creator video");
+
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(creator)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recommendations[?(@.id == '" + ownVideo + "')]").isEmpty());
+    }
+
         @Test
         void interactionDtoValidatesRatingAndWatchDuration() {
                 var invalidInteraction = new CreateInteractionRequest(UUID.randomUUID(), 6, -1);
