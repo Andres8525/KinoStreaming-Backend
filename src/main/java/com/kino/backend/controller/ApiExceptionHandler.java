@@ -5,6 +5,8 @@ import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,6 +22,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials() {
@@ -66,6 +70,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException exception) {
         HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
         return error(status, exception.getReason() == null ? status.getReasonPhrase() : exception.getReason(), Map.of());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpected(Exception exception) {
+        LOGGER.error("Unexpected error while processing request", exception);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado", Map.of());
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, String message, Map<String, String> validationErrors) {
