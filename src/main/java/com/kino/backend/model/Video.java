@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "videos")
+@Table(name = "videos", indexes = @Index(name = "idx_videos_views_created_at", columnList = "view_count, created_at"))
 public class Video {
 
     @Id
@@ -34,6 +35,12 @@ public class Video {
 
     @Column(nullable = false, length = 2048)
     private String videoUrl;
+
+    @Column(length = 2048)
+    private String thumbnailUrl;
+
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long viewCount;
 
     @ElementCollection
     @CollectionTable(name = "video_tags", joinColumns = @JoinColumn(name = "video_id"))
