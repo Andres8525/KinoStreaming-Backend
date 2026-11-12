@@ -297,7 +297,77 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.title").value("A Kino Short"))
                                 .andExpect(jsonPath("$.creator.displayName").value("Publishing Creator"))
                 .andExpect(jsonPath("$.accessPrice").value(4.99))
+                .andExpect(jsonPath("$.thumbnailUrl").value("https://cdn.example.com/short.jpg"))
+                .andExpect(jsonPath("$.viewCount").value(0))
                 .andExpect(jsonPath("$.suggestedDonation").value(2.00));
+    }
+
+    @Test
+    void catalogPlaybackViewsAndCreatorAnalyticsUsePersistedVideoData() throws Exception {
+        var creator = userRepository.save(new com.kino.backend.model.User(
+                "Streaming Creator", "creator-streaming@example.com",
+                passwordEncoder.encode("secure-password-1"), UserRole.CREATOR));
+        String token = jwtService.generateToken(creator);
+        String payload = objectMapper.writeValueAsString(new CreateVideoRequest(
+                "Streaming Short", "A film that can be streamed", "https://cdn.example.com/stream.mp4",
+                "https://cdn.example.com/stream.jpg", List.of("Documental"),
+                java.math.BigDecimal.ZERO, null));
+
+        String created = mockMvc.perform(post("/api/creator/videos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID videoId = UUID.fromString(objectMapper.readTree(created).get("id").asText());
+
+        mockMvc.perform(get("/api/videos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + videoId + "')]").exists());
+        mockMvc.perform(get("/api/videos/{videoId}", videoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.videoUrl").value("https://cdn.example.com/stream.mp4"));
+        mockMvc.perform(post("/api/videos/{videoId}/views", videoId))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/videos/{videoId}/views", videoId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewCount").value(1));
+        mockMvc.perform(get("/api/videos/{videoId}", videoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewCount").value(1));
+        mockMvc.perform(get("/api/videos/trending"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + videoId + "')]")
+                        .value(org.hamcrest.Matchers.hasSize(1)));
+        mockMvc.perform(get("/api/creator/videos/analytics")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.videoCount").value(1))
+                .andExpect(jsonPath("$.totalViews").value(1))
+                .andExpect(jsonPath("$.topVideos[0].id").value(videoId.toString()));
+    }
+
+    @Test
+    void recommendationsUseSharedViewingHistoryAndPopularity() throws Exception {
+        var creatorOne = createUser("Recommender Creator One", "recommender-creator-one@example.com", UserRole.CREATOR);
+        var creatorTwo = createUser("Recommender Creator Two", "recommender-creator-two@example.com", UserRole.CREATOR);
+        var viewerOne = createUser("Recommender Viewer One", "recommender-viewer-one@example.com", UserRole.VIEWER);
+        var viewerTwo = createUser("Recommender Viewer Two", "recommender-viewer-two@example.com", UserRole.VIEWER);
+        var targetViewer = createUser("Target Recommender Viewer", "target-recommender@example.com", UserRole.VIEWER);
+        UUID sharedVideo = publishVideo(creatorOne, "Shared viewing history");
+        UUID suggestedVideo = publishVideo(creatorTwo, "Collaborative suggestion");
+
+        recordView(sharedVideo, viewerOne);
+        recordView(suggestedVideo, viewerOne);
+        recordView(sharedVideo, viewerTwo);
+        recordView(sharedVideo, targetViewer);
+
+        mockMvc.perform(get("/api/feed/recommendations")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(targetViewer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.strategy").value("hybrid-collaborative-popularity"))
+                .andExpect(jsonPath("$.recommendations[0].id").value(suggestedVideo.toString()));
     }
 
         @Test
