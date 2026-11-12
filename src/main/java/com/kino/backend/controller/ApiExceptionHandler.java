@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -42,6 +43,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
         return error(HttpStatus.BAD_REQUEST, "Parámetro con formato no válido",
                 Map.of(exception.getName(), "Formato no válido"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> handleMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
+        return error(HttpStatus.METHOD_NOT_ALLOWED,
+                "Método " + exception.getMethod() + " no permitido en esta ruta", Map.of());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
