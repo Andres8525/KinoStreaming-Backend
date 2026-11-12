@@ -285,6 +285,7 @@ class ApiIntegrationTest {
         String token = jwtService.generateToken(creator);
         String payload = objectMapper.writeValueAsString(new CreateVideoRequest(
                 "A Kino Short", "Independent short film", "https://cdn.example.com/short.mp4",
+                "https://cdn.example.com/short.jpg",
                 List.of("Cortometraje", "Indie"), new java.math.BigDecimal("4.99"),
                 new java.math.BigDecimal("2.00")));
 
