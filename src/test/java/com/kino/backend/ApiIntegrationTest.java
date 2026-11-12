@@ -420,6 +420,19 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void searchFindsVideosByTitleIgnoringCase() throws Exception {
+        var creator = createUser("Search Creator", "search-creator@example.com", UserRole.CREATOR);
+        UUID videoId = publishVideo(creator, "Nocturnal Andes Expedition");
+
+        mockMvc.perform(get("/api/videos/search").param("q", "andes EXPED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + videoId + "')]").exists());
+        mockMvc.perform(get("/api/videos/search").param("q", "   "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
     void recommendationsExcludeCreatorsOwnVideos() throws Exception {
         var creator = createUser("Self Feed Creator", "self-feed-creator@example.com", UserRole.CREATOR);
         UUID ownVideo = publishVideo(creator, "Own creator video");
