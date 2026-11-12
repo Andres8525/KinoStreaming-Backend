@@ -162,6 +162,15 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void malformedJsonBodyReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("El cuerpo de la solicitud no es un JSON válido"));
+    }
+
+    @Test
     void viewerTokenCannotAccessCreatorEndpoints() throws Exception {
         String registerResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
