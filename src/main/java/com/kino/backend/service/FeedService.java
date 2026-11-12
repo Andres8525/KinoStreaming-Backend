@@ -50,17 +50,23 @@ public class FeedService {
                 .forEach(interaction -> collaborativeScores.merge(
                         interaction.getVideo().getId(), score(interaction), Long::sum));
 
-        List<Video> rankedVideos = videoRepository.findAllByOrderByCreatedAtDesc().stream()
+        List<Video> rankedVideos = videoRepository.findAllByOrderByViewCountDescCreatedAtDesc().stream()
                 .filter(video -> !video.getCreator().getEmail().equalsIgnoreCase(email))
                 .filter(video -> !watchedVideoIds.contains(video.getId()))
                 .sorted(Comparator
-                        .comparingLong((Video video) -> collaborativeScores.getOrDefault(video.getId(), 0L)).reversed()
+                        .comparingLong((Video video) -> rank(video, collaborativeScores)).reversed()
                         .thenComparing(Video::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(20)
                 .toList();
 
-        return new FeedResponse("collaborative-filtering-demo", Instant.now(),
+        return new FeedResponse("hybrid-collaborative-popularity", Instant.now(),
                 rankedVideos.stream().map(VideoResponse::from).toList());
+    }
+
+    private long rank(Video video, Map<UUID, Long> collaborativeScores) {
+        long popularityScore = Math.min(video.getViewCount(), 1_000_000L);
+        long collaborativeScore = Math.min(collaborativeScores.getOrDefault(video.getId(), 0L), 100_000L);
+        return popularityScore + collaborativeScore * 10L;
     }
 
     private long score(Interaction interaction) {
