@@ -67,7 +67,7 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/feed/recommendations")
                         .header("Authorization", "Bearer " + authResponse.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.strategy").value("collaborative-filtering-demo"))
+                .andExpect(jsonPath("$.strategy").value("hybrid-collaborative-popularity"))
                 .andExpect(jsonPath("$.recommendations").isArray());
     }
 
