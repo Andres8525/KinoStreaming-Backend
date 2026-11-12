@@ -89,6 +89,14 @@ public class VideoService {
         return video.getViewCount();
     }
 
+    @Transactional
+    public void delete(String creatorEmail, UUID videoId) {
+        Video video = videoRepository.findByIdAndCreator_EmailIgnoreCase(videoId, creatorEmail)
+                .orElseThrow(VideoService::videoNotFound);
+        interactionRepository.deleteByVideo_Id(video.getId());
+        videoRepository.delete(video);
+    }
+
     @Transactional(readOnly = true)
     public List<VideoResponse> listByCreator(String creatorEmail) {
         return videoRepository.findByCreator_EmailIgnoreCaseOrderByCreatedAtDesc(creatorEmail).stream()
