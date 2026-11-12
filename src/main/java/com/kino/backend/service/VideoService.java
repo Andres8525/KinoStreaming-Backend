@@ -1,15 +1,21 @@
 package com.kino.backend.service;
 
 import com.kino.backend.dto.CreateVideoRequest;
+import com.kino.backend.dto.CreatorAnalyticsResponse;
 import com.kino.backend.dto.VideoResponse;
+import com.kino.backend.model.Interaction;
 import com.kino.backend.model.User;
 import com.kino.backend.model.Video;
+import com.kino.backend.repository.InteractionRepository;
 import com.kino.backend.repository.UserRepository;
 import com.kino.backend.repository.VideoRepository;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -17,10 +23,13 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final InteractionRepository interactionRepository;
 
-    public VideoService(VideoRepository videoRepository, UserRepository userRepository) {
+    public VideoService(VideoRepository videoRepository, UserRepository userRepository,
+                        InteractionRepository interactionRepository) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
+        this.interactionRepository = interactionRepository;
     }
 
     @Transactional
