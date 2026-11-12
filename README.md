@@ -42,7 +42,26 @@ The API listens on `http://localhost:8080`. CORS allows the Angular dev server a
 - `GET /api/videos/{id}` returns the video details and streaming URL.
 - `POST /api/videos/{id}/views` requires a bearer token, increments the view count, and records the viewer/video pair once for recommendations.
 - `GET /api/feed/recommendations` requires a bearer token and returns `{ strategy, generatedAt, recommendations }`, ranked with collaboration and popularity signals.
+- `GET /api/videos/search?q=` returns up to 50 videos whose title contains the query (case-insensitive). A blank query returns an empty list.
+- `GET /api/users/me` requires a bearer token and returns the authenticated user's `id`, `displayName`, `email` and `role`.
 - `GET /api/creator/videos`, `GET /api/creator/videos/analytics`, and `POST /api/creator/videos` require a bearer token with `CREATOR` role.
+- `DELETE /api/creator/videos/{id}` requires a bearer token with `CREATOR` role, deletes a video owned by the caller together with its recorded interactions, and returns `204`. Videos owned by another creator return `404`.
+
+## Error format
+
+Every error is returned as JSON with the same shape, including authentication (`401`) and authorization (`403`) failures:
+
+```json
+{
+  "timestamp": "2026-11-12T10:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Revisa los campos enviados",
+  "validationErrors": { "videoUrl": "Debe ser una URL HTTP o HTTPS válida" }
+}
+```
+
+Malformed JSON bodies and invalid path parameters (for example a non-UUID video id) return `400`, unknown routes return `404`, unsupported HTTP methods return `405`, and unexpected failures return a generic `500` message while the details are logged on the server.
 
 New public registrations are always assigned `VIEWER`; grant `CREATOR` through a trusted administrative process. Video storage is represented by `videoUrl` and `thumbnailUrl`; the binary upload to S3 or another object store and payment processing are not implemented. The frontend player streams directly from the supplied URL, which must be publicly reachable and supported by the browser.
 
