@@ -177,6 +177,16 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void unauthenticatedRequestReturnsJsonError() throws Exception {
+        mockMvc.perform(get("/api/feed/recommendations"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Content-Type",
+                        org.hamcrest.Matchers.startsWith(MediaType.APPLICATION_JSON_VALUE)))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Autenticación requerida"));
+    }
+
+    @Test
     void protectedFeedRejectsMalformedJwt() throws Exception {
         mockMvc.perform(get("/api/feed/recommendations")
                         .header("Authorization", "Bearer not-a-valid-jwt"))
