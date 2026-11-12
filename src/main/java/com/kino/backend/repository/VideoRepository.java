@@ -14,6 +14,7 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
     List<Video> findAllByOrderByCreatedAtDesc();
     List<Video> findAllByOrderByViewCountDescCreatedAtDesc();
     List<Video> findAllByOrderByViewCountDescCreatedAtDesc(Pageable pageable);
+    List<Video> findByTitleContainingIgnoreCaseOrderByCreatedAtDesc(String title, Pageable pageable);
 
     @Modifying
     @Query("update Video video set video.viewCount = video.viewCount + 1 where video.id = :videoId")
