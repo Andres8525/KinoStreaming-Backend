@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,6 +30,11 @@ public class ApiExceptionHandler {
                         error -> error.getDefaultMessage() == null ? "Valor no válido" : error.getDefaultMessage(),
                         (first, ignored) -> first));
         return error(HttpStatus.BAD_REQUEST, "Revisa los campos enviados", errors);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableBody() {
+        return error(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es un JSON válido", Map.of());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
