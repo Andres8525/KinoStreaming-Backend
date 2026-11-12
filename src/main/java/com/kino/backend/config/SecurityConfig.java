@@ -22,12 +22,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig implements WebMvcConfigurer {
+public class SecurityConfig {
 
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
@@ -37,17 +35,6 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     public SecurityConfig(@Value("${kino.cors.allowed-origins:http://localhost:4200}") List<String> allowedOrigins) {
         this.allowedOrigins = List.copyOf(allowedOrigins);
-    }
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins.toArray(String[]::new))
-                .allowedMethods(ALLOWED_METHODS.toArray(String[]::new))
-                .allowedHeaders(ALLOWED_HEADERS.toArray(String[]::new))
-                .exposedHeaders(EXPOSED_HEADERS.toArray(String[]::new))
-                .allowCredentials(true)
-                .maxAge(3600);
     }
 
     @Bean
