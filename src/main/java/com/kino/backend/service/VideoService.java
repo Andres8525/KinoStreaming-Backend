@@ -58,6 +58,18 @@ public class VideoService {
     }
 
     @Transactional(readOnly = true)
+    public List<VideoResponse> search(String query) {
+        String term = query == null ? "" : query.trim();
+        if (term.isEmpty()) {
+            return List.of();
+        }
+        return videoRepository.findByTitleContainingIgnoreCaseOrderByCreatedAtDesc(term, PageRequest.of(0, 50))
+                .stream()
+                .map(VideoResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public VideoResponse findById(UUID videoId) {
         return videoRepository.findById(videoId)
                 .map(VideoResponse::from)
