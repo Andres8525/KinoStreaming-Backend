@@ -3,6 +3,7 @@ package com.kino.backend.config;
 import com.kino.backend.security.JwtAuthenticationFilter;
 import com.kino.backend.security.CustomUserDetailsService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,15 +29,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 public class SecurityConfig implements WebMvcConfigurer {
 
-    private static final List<String> ALLOWED_ORIGINS = List.of("http://localhost:4200");
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
     private static final List<String> EXPOSED_HEADERS = List.of("Authorization");
 
+    private final List<String> allowedOrigins;
+
+    public SecurityConfig(@Value("${kino.cors.allowed-origins:http://localhost:4200}") List<String> allowedOrigins) {
+        this.allowedOrigins = List.copyOf(allowedOrigins);
+    }
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(ALLOWED_ORIGINS.toArray(String[]::new))
+                .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods(ALLOWED_METHODS.toArray(String[]::new))
                 .allowedHeaders(ALLOWED_HEADERS.toArray(String[]::new))
                 .exposedHeaders(EXPOSED_HEADERS.toArray(String[]::new))
@@ -47,7 +53,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(ALLOWED_METHODS);
         configuration.setAllowedHeaders(ALLOWED_HEADERS);
         configuration.setExposedHeaders(EXPOSED_HEADERS);
