@@ -434,6 +434,22 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void profileEndpointReturnsAuthenticatedUser() throws Exception {
+        var user = createUser("Profile Viewer", "profile-viewer@example.com", UserRole.VIEWER);
+
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId().toString()))
+                .andExpect(jsonPath("$.displayName").value("Profile Viewer"))
+                .andExpect(jsonPath("$.email").value("profile-viewer@example.com"))
+                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
     void creatorCanDeleteOnlyOwnVideos() throws Exception {
         var owner = createUser("Delete Owner", "delete-owner@example.com", UserRole.CREATOR);
         var otherCreator = createUser("Delete Other", "delete-other@example.com", UserRole.CREATOR);
