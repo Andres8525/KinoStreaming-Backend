@@ -1,6 +1,7 @@
 package com.kino.backend.controller;
 
 import com.kino.backend.dto.CreateVideoRequest;
+import com.kino.backend.dto.CreatorAnalyticsResponse;
 import com.kino.backend.dto.VideoResponse;
 import com.kino.backend.service.VideoService;
 import jakarta.validation.Valid;
@@ -33,5 +34,10 @@ public class CreatorController {
     @GetMapping
     public List<VideoResponse> listMine(Principal principal) {
         return videoService.listByCreator(principal.getName());
+    }
+
+    @GetMapping("/analytics")
+    public CreatorAnalyticsResponse analytics(Principal principal) {
+        return videoService.analytics(principal.getName());
     }
 }
