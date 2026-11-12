@@ -1,6 +1,7 @@
 package com.kino.backend.config;
 
 import com.kino.backend.security.CustomUserDetailsService;
+import com.kino.backend.security.JsonAccessDeniedHandler;
 import com.kino.backend.security.JsonAuthenticationEntryPoint;
 import com.kino.backend.security.JwtAuthenticationFilter;
 import java.util.List;
@@ -68,12 +69,15 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
-                                            JsonAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+                                            JsonAuthenticationEntryPoint authenticationEntryPoint,
+                                            JsonAccessDeniedHandler accessDeniedHandler) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
