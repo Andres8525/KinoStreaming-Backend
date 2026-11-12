@@ -37,9 +37,44 @@ public class VideoService {
         User creator = userRepository.findByEmailIgnoreCase(creatorEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el creador"));
         Video video = new Video(request.title().trim(), request.description().trim(), request.videoUrl().trim(),
+                request.thumbnailUrl() == null ? null : request.thumbnailUrl().trim(),
                 request.tags().stream().map(String::trim).distinct().toList(), request.accessPrice(),
                 request.suggestedDonation(), creator);
         return VideoResponse.from(videoRepository.save(video));
+    }
+
+    @Transactional(readOnly = true)
+    public List<VideoResponse> listCatalog() {
+        return videoRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(VideoResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<VideoResponse> listTrending() {
+        return videoRepository.findAllByOrderByViewCountDescCreatedAtDesc(PageRequest.of(0, 20)).stream()
+                .map(VideoResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public VideoResponse findById(UUID videoId) {
+        return videoRepository.findById(videoId)
+                .map(VideoResponse::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video"));
+    }
+
+    @Transactional
+    public long recordView(UUID videoId, User viewer) {
+        if (videoRepository.incrementViewCount(videoId) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video");
+        }
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el video"));
+        if (!interactionRepository.existsByUser_IdAndVideo_Id(viewer.getId(), videoId)) {
+            interactionRepository.save(new Interaction(viewer, video, null, 0));
+        }
+        return video.getViewCount();
     }
 
     @Transactional(readOnly = true)
@@ -47,5 +82,19 @@ public class VideoService {
         return videoRepository.findByCreator_EmailIgnoreCaseOrderByCreatedAtDesc(creatorEmail).stream()
                 .map(VideoResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CreatorAnalyticsResponse analytics(String creatorEmail) {
+        List<VideoResponse> videos = videoRepository.findByCreator_EmailIgnoreCaseOrderByCreatedAtDesc(creatorEmail)
+                .stream()
+                .map(VideoResponse::from)
+                .toList();
+        long totalViews = videos.stream().mapToLong(VideoResponse::viewCount).sum();
+        List<VideoResponse> topVideos = videos.stream()
+                .sorted(Comparator.comparingLong(VideoResponse::viewCount).reversed())
+                .limit(5)
+                .toList();
+        return new CreatorAnalyticsResponse(videos.size(), totalViews, topVideos);
     }
 }
