@@ -63,11 +63,12 @@ public class Video {
     protected Video() {
     }
 
-    public Video(String title, String description, String videoUrl, List<String> tags,
+    public Video(String title, String description, String videoUrl, String thumbnailUrl, List<String> tags,
                  BigDecimal accessPrice, BigDecimal suggestedDonation, User creator) {
         this.title = title;
         this.description = description;
         this.videoUrl = videoUrl;
+        this.thumbnailUrl = thumbnailUrl;
         this.tags = new ArrayList<>(tags);
         this.accessPrice = accessPrice;
         this.suggestedDonation = suggestedDonation;
@@ -83,6 +84,8 @@ public class Video {
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getVideoUrl() { return videoUrl; }
+    public String getThumbnailUrl() { return thumbnailUrl; }
+    public long getViewCount() { return viewCount; }
     public List<String> getTags() { return List.copyOf(tags); }
     public BigDecimal getAccessPrice() { return accessPrice; }
     public BigDecimal getSuggestedDonation() { return suggestedDonation; }
