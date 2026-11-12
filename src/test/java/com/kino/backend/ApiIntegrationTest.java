@@ -185,6 +185,13 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void unsupportedMethodReturnsJsonMethodNotAllowed() throws Exception {
+        mockMvc.perform(get("/api/auth/login"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405));
+    }
+
+    @Test
     void viewerTokenCannotAccessCreatorEndpoints() throws Exception {
         String registerResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
