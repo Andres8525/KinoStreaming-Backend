@@ -2,3 +2,12 @@ target/
 .idea/
 *.iml
 .env
+
+# Editors and OS
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
