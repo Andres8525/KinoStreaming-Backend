@@ -37,10 +37,14 @@ The API listens on `http://localhost:8080`. CORS allows the Angular dev server a
 
 - `POST /api/auth/register` creates a viewer and returns a bearer token.
 - `POST /api/auth/login` authenticates and returns a bearer token.
-- `GET /api/feed/recommendations` requires a bearer token and returns `{ strategy, generatedAt, recommendations }`.
-- `GET /api/creator/videos` and `POST /api/creator/videos` require a bearer token with `CREATOR` role.
+- `GET /api/videos` returns the public video catalog.
+- `GET /api/videos/trending` returns up to 20 videos ordered by recorded playback count.
+- `GET /api/videos/{id}` returns the video details and streaming URL.
+- `POST /api/videos/{id}/views` requires a bearer token, increments the view count, and records the viewer/video pair once for recommendations.
+- `GET /api/feed/recommendations` requires a bearer token and returns `{ strategy, generatedAt, recommendations }`, ranked with collaboration and popularity signals.
+- `GET /api/creator/videos`, `GET /api/creator/videos/analytics`, and `POST /api/creator/videos` require a bearer token with `CREATOR` role.
 
-New public registrations are always assigned `VIEWER`; grant `CREATOR` through a trusted administrative process. Video storage is represented by `videoUrl`; the binary upload to S3 or another object store is not implemented here.
+New public registrations are always assigned `VIEWER`; grant `CREATOR` through a trusted administrative process. Video storage is represented by `videoUrl` and `thumbnailUrl`; the binary upload to S3 or another object store and payment processing are not implemented. The frontend player streams directly from the supplied URL, which must be publicly reachable and supported by the browser.
 
 To promote an account after registration, use a trusted database administrator connection, not a public API request:
 
@@ -48,6 +52,6 @@ To promote an account after registration, use a trusted database administrator c
 UPDATE users SET role = 'CREATOR' WHERE email = 'creator@example.com';
 ```
 
-The recommendation endpoint is a small in-memory collaborative-filtering demonstration over persisted interactions. It is intended to define the integration contract, not to replace a production recommendation service or a scalable ranking query.
+The recommendation endpoint uses a lightweight hybrid ranker: recorded viewer/video pairs contribute collaborative scores, while persisted playback counts contribute popularity scores. It runs locally without an external AI provider or trained machine-learning model; it is an integration-ready baseline, not a production recommendation service. Playback counts are incremented per play request, while each account/video pair is stored once for collaborative filtering.
 
-Set `DDL_AUTO=validate` in deployed environments and manage schema changes with database migrations. Never use the development JWT key or database password outside local development.
+Before setting `DDL_AUTO=validate` on an existing database, apply `src/main/resources/db/manual/2026-11-11-video-streaming-metadata.sql`. Never use the development JWT key or database password outside local development.
