@@ -378,4 +378,27 @@ class ApiIntegrationTest {
 
                 org.junit.jupiter.api.Assertions.assertEquals(2, violations.size());
         }
+
+    private com.kino.backend.model.User createUser(String name, String email, UserRole role) {
+        return userRepository.save(new com.kino.backend.model.User(
+                name, email, passwordEncoder.encode("secure-password-1"), role));
+    }
+
+    private UUID publishVideo(com.kino.backend.model.User creator, String title) throws Exception {
+        String response = mockMvc.perform(post("/api/creator/videos")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(creator))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateVideoRequest(
+                                title, "Description for " + title, "https://cdn.example.com/" + title.hashCode() + ".mp4",
+                                null, List.of("Documental"), java.math.BigDecimal.ZERO, null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(objectMapper.readTree(response).get("id").asText());
+    }
+
+    private void recordView(UUID videoId, com.kino.backend.model.User viewer) throws Exception {
+        mockMvc.perform(post("/api/videos/{videoId}/views", videoId)
+                        .header("Authorization", "Bearer " + jwtService.generateToken(viewer)))
+                .andExpect(status().isOk());
+    }
 }
