@@ -185,6 +185,13 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void unknownRouteReturnsJsonNotFound() throws Exception {
+        mockMvc.perform(get("/api/does-not-exist"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("La ruta solicitada no existe"));
+    }
+
+    @Test
     void unsupportedMethodReturnsJsonMethodNotAllowed() throws Exception {
         mockMvc.perform(get("/api/auth/login"))
                 .andExpect(status().isMethodNotAllowed())
