@@ -37,7 +37,7 @@ public class AuthService {
             throw new FieldConflictException("email", "El correo ya está registrado");
         }
 
-        User user = new User(request.displayName().trim(), email,
+        User user = new User(normalizeDisplayName(request.displayName()), email,
                 passwordEncoder.encode(request.password()), UserRole.VIEWER);
         userRepository.save(user);
         return createResponse(user);
@@ -48,6 +48,11 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.email().trim().toLowerCase(), request.password()));
         User user = (User) authentication.getPrincipal();
         return createResponse(user);
+    }
+
+    /** Trims the name and collapses repeated whitespace ("  Ana   Ruiz " -> "Ana Ruiz"). */
+    static String normalizeDisplayName(String displayName) {
+        return displayName.trim().replaceAll("\s+", " ");
     }
 
     private AuthResponse createResponse(User user) {
