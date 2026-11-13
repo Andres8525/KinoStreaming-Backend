@@ -48,7 +48,19 @@ public record CorsOrigins(List<String> origins, List<String> patterns) {
         while (!value.isEmpty() && (value.endsWith("\"") || value.endsWith("'") || value.endsWith("/"))) {
             value = value.substring(0, value.length() - 1);
         }
-        return stripPath(value.trim());
+        return stripPath(addMissingScheme(value.trim()));
+    }
+
+    /**
+     * Browsers always send the scheme in the Origin header, so a bare domain typed in the dashboard
+     * ("kino.vercel.app") would never match. Assume https, or http for local development hosts.
+     */
+    private static String addMissingScheme(String value) {
+        if (value.isEmpty() || value.contains("://")) {
+            return value;
+        }
+        boolean local = value.startsWith("localhost") || value.startsWith("127.0.0.1");
+        return (local ? "http://" : "https://") + value;
     }
 
     /** An origin is scheme://host[:port]; drop any path, query or fragment pasted from the address bar. */
