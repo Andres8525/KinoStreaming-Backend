@@ -84,6 +84,7 @@ Render injects `PORT` (Spring reads it automatically). On the free plan the serv
 
 ## Endpoints
 
+- `GET /api/live`, `GET /api/live/{id}` and `GET /api/ai/trending-insights` are public (see below).
 - `GET /api/health` is public and returns `{ status, database, timestamp }`; it is used by Render as health check.
 
 - `POST /api/auth/register` creates a viewer and returns a bearer token.
@@ -97,6 +98,25 @@ Render injects `PORT` (Spring reads it automatically). On the free plan the serv
 - `GET /api/users/me` requires a bearer token and returns the authenticated user's `id`, `displayName`, `email` and `role`.
 - `GET /api/creator/videos`, `GET /api/creator/videos/analytics`, and `POST /api/creator/videos` require a bearer token with `CREATOR` role.
 - `DELETE /api/creator/videos/{id}` requires a bearer token with `CREATOR` role, deletes a video owned by the caller together with its recorded interactions, and returns `204`. Videos owned by another creator return `404`.
+
+### Live streaming
+
+- `GET /api/live` (public) lists the broadcasts that are live now; `GET /api/live/{id}` returns one broadcast (live or ended).
+- `POST /api/creator/live` (`CREATOR`) starts a broadcast with `title`, `category`, `playbackUrl` and optional `description` / `thumbnailUrl`. A creator can only have one live broadcast; a second one returns `409`.
+- `GET /api/creator/live/current` (`CREATOR`) returns the caller's live broadcast, or `204` when they are offline.
+- `POST /api/creator/live/{id}/end` (`CREATOR`) ends the caller's broadcast.
+
+Kino does not ingest video itself. The creator streams with OBS (or similar) to a media service that provides HLS playback (for example Cloudflare Stream, Mux, AWS IVS or an own nginx-rtmp server) and registers the public `.m3u8` playback URL. Before deploying this version on an existing database, run `src/main/resources/db/supabase/2026-11-13-live-streams.sql` in Supabase.
+
+### Kino IA
+
+`GET /api/ai/trending-insights` (public) returns `{ generatedAt, source, summary, mostWatched, rising, topCategories, totalViews, liveNow }`: the most watched videos, videos published in the last 7 days that are gaining views, the categories with the most views and a short summary. The result is cached for `AI_CACHE_TTL` (5 minutes by default).
+
+`source` is `kino-analytics` while no AI provider is connected (the summary is written from Kino's statistics) and `ai` when the summary comes from the AI. To connect an AI API:
+
+1. Add a Spring `@Component` that implements `com.kino.backend.ai.AiTextGenerator`. It receives a `TrendingSnapshot` and returns the summary text; read the key and model from `AiProperties`.
+2. Set `AI_ENABLED=true`, `AI_PROVIDER`, `AI_API_KEY` and `AI_MODEL` (in `.env` locally, in the Render dashboard in production). Never commit the key.
+3. If the provider fails or returns nothing, Kino logs a warning and falls back to its own summary, so the dashboard keeps working.
 
 ## Error format
 
