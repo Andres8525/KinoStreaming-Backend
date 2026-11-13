@@ -102,7 +102,8 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("member@example.com"));
+                .andExpect(jsonPath("$.email").value("member@example.com"))
+                .andExpect(jsonPath("$.displayName").value("Kino Member"));
 
         var savedUser = userRepository.findByEmailIgnoreCase("member@example.com").orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals("Kino Member", savedUser.getDisplayName());
@@ -127,6 +128,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.email").value("login-viewer@example.com"))
+                .andExpect(jsonPath("$.displayName").value("Login Viewer"))
                 .andExpect(jsonPath("$.role").value("VIEWER"))
                 .andReturn().getResponse().getContentAsString();
 
