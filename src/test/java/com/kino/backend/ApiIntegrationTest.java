@@ -285,7 +285,10 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"))
-                .andExpect(jsonPath("$.database").value("UP"));
+                .andExpect(jsonPath("$.database").value("UP"))
+                .andExpect(jsonPath("$.cors.origins[0]").value("http://localhost:4200"))
+                .andExpect(jsonPath("$.cors.patterns").isArray())
+                .andExpect(jsonPath("$.build").exists());
     }
 
     @Test
