@@ -31,9 +31,27 @@ $env:JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long"
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`. CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list to allow other origins.
+The API listens on `http://localhost:8081` (port 8080 is often taken by other local tools such as Jenkins; override it with `PORT`). CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list to allow other origins.
 
 `.env.example` lists every supported environment variable. `JWT_SECRET` must be at least 32 bytes long; the application refuses to start otherwise.
+
+### Supabase database
+
+The backend can use a Supabase PostgreSQL database instead of the local Docker one. Only the backend connects to the database; the Angular frontend keeps calling this REST API.
+
+1. Run `src/main/resources/db/supabase/schema.sql` once in the Supabase SQL Editor. It creates the tables, indexes and constraints, and enables Row Level Security so the public Supabase Data API cannot read them.
+2. Copy `.env.example` to `.env` (the backend loads it automatically) and fill in the **Session pooler** connection values from Supabase > Connect:
+
+   ```properties
+   DB_URL=jdbc:postgresql://aws-<n>-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+   DB_USERNAME=postgres.<project-ref>
+   DB_PASSWORD=<your-supabase-database-password>
+   DDL_AUTO=validate
+   ```
+
+3. Run `mvn spring-boot:run`. With `DDL_AUTO=validate`, startup fails if the schema does not match the entities.
+
+Use the Session pooler (port 5432) rather than the direct connection (`db.<project-ref>.supabase.co`), which only resolves over IPv6 on the free plan and fails with `UnknownHostException` on IPv4-only networks. Copy the pooler host exactly: it can start with `aws-0-` or `aws-1-`. If you use the Transaction pooler (port 6543), add `&prepareThreshold=0` to `DB_URL`.
 
 Run the test suite (uses an in-memory H2 database, no PostgreSQL needed):
 
@@ -47,7 +65,7 @@ Build and run the API as a container:
 
 ```powershell
 docker build -t kino-backend .
-docker run --rm -p 8080:8080 `
+docker run --rm -p 8081:8081 `
   -e DB_URL="jdbc:postgresql://host.docker.internal:5432/kino" `
   -e DB_USERNAME="kino" -e DB_PASSWORD="kino_dev_password" `
   -e JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long" `
