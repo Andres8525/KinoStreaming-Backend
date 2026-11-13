@@ -14,7 +14,7 @@ COPY --from=build /app/extracted/ ./
 USER kino
 
 ENV PORT=8081
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xshare:auto -Xss512k -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8081
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
