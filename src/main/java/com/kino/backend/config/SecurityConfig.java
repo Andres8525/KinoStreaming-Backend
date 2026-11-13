@@ -81,6 +81,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos", "/api/videos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
                         .requestMatchers("/api/creator/**").hasRole("CREATOR")

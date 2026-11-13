@@ -186,6 +186,14 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void healthEndpointIsPublicAndReportsDatabase() throws Exception {
+        mockMvc.perform(get("/api/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.database").value("UP"));
+    }
+
+    @Test
     void unknownRouteReturnsJsonNotFound() throws Exception {
         mockMvc.perform(get("/api/does-not-exist"))
                 .andExpect(status().isNotFound())
