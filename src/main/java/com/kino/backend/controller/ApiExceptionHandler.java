@@ -1,6 +1,7 @@
 package com.kino.backend.controller;
 
 import com.kino.backend.dto.ApiError;
+import com.kino.backend.service.FieldConflictException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
@@ -71,6 +72,11 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException exception) {
         HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
         return error(status, exception.getReason() == null ? status.getReasonPhrase() : exception.getReason(), Map.of());
+    }
+
+    @ExceptionHandler(FieldConflictException.class)
+    public ResponseEntity<ApiError> handleFieldConflict(FieldConflictException exception) {
+        return error(HttpStatus.CONFLICT, exception.getMessage(), Map.of(exception.getField(), exception.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

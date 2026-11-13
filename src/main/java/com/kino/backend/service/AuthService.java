@@ -36,7 +36,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El correo ya está registrado");
+            throw new FieldConflictException("email", "El correo ya está registrado");
         }
 
         User user = new User(request.displayName().trim(), email,
