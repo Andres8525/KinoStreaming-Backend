@@ -52,7 +52,7 @@ public class AuthService {
 
     /** Trims the name and collapses repeated whitespace ("  Ana   Ruiz " -> "Ana Ruiz"). */
     static String normalizeDisplayName(String displayName) {
-        return displayName.trim().replaceAll("\s+", " ");
+        return displayName.trim().replaceAll("\\s+", " ");
     }
 
     private AuthResponse createResponse(User user) {
