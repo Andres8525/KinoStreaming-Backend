@@ -186,6 +186,79 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void creatorCanStartListAndEndALiveStream() throws Exception {
+        var creator = createUser("Live Creator", "live-creator@example.com", UserRole.CREATOR);
+        String token = "Bearer " + jwtService.generateToken(creator);
+        String payload = objectMapper.writeValueAsString(new com.kino.backend.dto.StartLiveStreamRequest(
+                "Directo de prueba", "Charla en vivo", "Música", "https://live.example.com/stream.m3u8", null));
+
+        String created = mockMvc.perform(post("/api/creator/live").header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("LIVE"))
+                .andExpect(jsonPath("$.creator.displayName").value("Live Creator"))
+                .andReturn().getResponse().getContentAsString();
+        String streamId = objectMapper.readTree(created).get("id").asText();
+
+        mockMvc.perform(get("/api/live"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == '" + streamId + "')]").exists());
+        mockMvc.perform(get("/api/live/{streamId}", streamId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.playbackUrl").value("https://live.example.com/stream.m3u8"));
+        mockMvc.perform(get("/api/creator/live/current").header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(streamId));
+        mockMvc.perform(post("/api/creator/live").header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/creator/live/{streamId}/end", streamId).header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ENDED"))
+                .andExpect(jsonPath("$.endedAt").isNotEmpty());
+        mockMvc.perform(get("/api/live"))
+                .andExpect(jsonPath("$[?(@.id == '" + streamId + "')]").isEmpty());
+        mockMvc.perform(get("/api/creator/live/current").header("Authorization", token))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void liveStreamsAreProtectedAndValidated() throws Exception {
+        var viewer = createUser("Live Viewer", "live-viewer@example.com", UserRole.VIEWER);
+        var owner = createUser("Live Owner", "live-owner@example.com", UserRole.CREATOR);
+        var otherCreator = createUser("Live Other", "live-other@example.com", UserRole.CREATOR);
+        String payload = objectMapper.writeValueAsString(Map.of(
+                "title", "Directo", "category", "Música", "playbackUrl", "https://live.example.com/a.m3u8"));
+
+        mockMvc.perform(post("/api/creator/live").header("Authorization", "Bearer " + jwtService.generateToken(viewer))
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/creator/live").header("Authorization", "Bearer " + jwtService.generateToken(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", "Directo", "category", "Música", "playbackUrl", "rtmp://not-http"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.playbackUrl").exists());
+
+        String created = mockMvc.perform(post("/api/creator/live")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(owner))
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String streamId = objectMapper.readTree(created).get("id").asText();
+
+        mockMvc.perform(post("/api/creator/live/{streamId}/end", streamId)
+                        .header("Authorization", "Bearer " + jwtService.generateToken(otherCreator)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/live/{streamId}", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/creator/live/{streamId}/end", streamId)
+                        .header("Authorization", "Bearer " + jwtService.generateToken(owner)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void healthEndpointIsPublicAndReportsDatabase() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
