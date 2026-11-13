@@ -85,10 +85,11 @@ Render injects `PORT` (Spring reads it automatically). On the free plan the serv
 ## Endpoints
 
 - `GET /api/live`, `GET /api/live/{id}` and `GET /api/ai/trending-insights` are public (see below).
+- `GET /api/health` also reports `build` (build time of the running version) and `cors` (the origins understood from `CORS_ALLOWED_ORIGINS`), the quickest way to check a deployment.
 - `GET /api/health` is public and returns `{ status, database, timestamp }`; it is used by Render as health check.
 
-- `POST /api/auth/register` creates a viewer and returns a bearer token.
-- `POST /api/auth/login` authenticates and returns a bearer token.
+- `POST /api/auth/register` creates a viewer and returns `{ accessToken, tokenType, email, displayName, role }`. Repeated spaces in the name are collapsed; an email that is already registered returns `409` with the message also under `validationErrors.email`.
+- `POST /api/auth/login` authenticates and returns the same response. Send the token as `Authorization: Bearer <token>` (the scheme is case-insensitive and surrounding spaces are ignored).
 - `GET /api/videos` returns the public video catalog.
 - `GET /api/videos/trending` returns up to 20 videos ordered by recorded playback count.
 - `GET /api/videos/{id}` returns the video details and streaming URL.
@@ -131,6 +132,8 @@ Every error is returned as JSON with the same shape, including authentication (`
   "validationErrors": { "videoUrl": "Debe ser una URL HTTP o HTTPS válida" }
 }
 ```
+
+Validation messages are always in Spanish (they do not depend on the server locale), so the frontend can show `validationErrors` next to each field.
 
 Malformed JSON bodies and invalid path parameters (for example a non-UUID video id) return `400`, unknown routes return `404`, unsupported HTTP methods return `405`, and unexpected failures return a generic `500` message while the details are logged on the server.
 
