@@ -55,7 +55,7 @@ class ApiIntegrationTest {
     private com.kino.backend.ai.TrendingInsightsService trendingInsightsService;
 
     @Test
-    void registerIssuesViewerTokenAndRecommendationsAcceptIt() throws Exception {
+    void registerIssuesCreatorTokenAndRecommendationsAcceptIt() throws Exception {
         String payload = objectMapper.writeValueAsString(
                 new RegisterRequest("Kino Viewer", "viewer@example.com", "secure-password-1", UserRole.CREATOR));
 
@@ -64,7 +64,7 @@ class ApiIntegrationTest {
                         .content(payload))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andExpect(jsonPath("$.role").value("CREATOR"))
                 .andReturn().getResponse().getContentAsString();
 
         AuthResponse authResponse = objectMapper.readValue(response, AuthResponse.class);
@@ -129,7 +129,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.email").value("login-viewer@example.com"))
                 .andExpect(jsonPath("$.displayName").value("Login Viewer"))
-                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andExpect(jsonPath("$.role").value("CREATOR"))
                 .andReturn().getResponse().getContentAsString();
 
         AuthResponse authResponse = objectMapper.readValue(response, AuthResponse.class);
@@ -247,9 +247,15 @@ class ApiIntegrationTest {
         String payload = objectMapper.writeValueAsString(Map.of(
                 "title", "Directo", "category", "Música", "playbackUrl", "https://live.example.com/a.m3u8"));
 
-        mockMvc.perform(post("/api/creator/live").header("Authorization", "Bearer " + jwtService.generateToken(viewer))
+        // Accounts created as VIEWER before every account became a creator can also go live.
+        String viewerStream = mockMvc.perform(post("/api/creator/live")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(viewer))
                         .contentType(MediaType.APPLICATION_JSON).content(payload))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        mockMvc.perform(post("/api/creator/live/{streamId}/end", objectMapper.readTree(viewerStream).get("id").asText())
+                        .header("Authorization", "Bearer " + jwtService.generateToken(viewer)))
+                .andExpect(status().isOk());
         mockMvc.perform(post("/api/creator/live").header("Authorization", "Bearer " + jwtService.generateToken(owner))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
@@ -319,7 +325,7 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void viewerTokenCannotAccessCreatorEndpoints() throws Exception {
+    void everyRegisteredAccountCanUseCreatorStudio() throws Exception {
         String registerResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(
@@ -330,9 +336,8 @@ class ApiIntegrationTest {
 
         mockMvc.perform(get("/api/creator/videos")
                         .header("Authorization", "Bearer " + authResponse.accessToken()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.message").value("No tienes permisos para realizar esta acción"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test

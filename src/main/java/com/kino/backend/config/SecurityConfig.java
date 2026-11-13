@@ -105,7 +105,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/live", "/api/live/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ai/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
-                        .requestMatchers("/api/creator/**").hasRole("CREATOR")
+                        // Every signed-in account can publish and go live; ownership is checked per resource.
+                        .requestMatchers("/api/creator/**").authenticated()
                         .requestMatchers("/api/feed/**").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().permitAll())

@@ -30,6 +30,7 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
+    /** Every account can publish videos and go live, so new accounts are created as CREATOR. */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
@@ -38,7 +39,7 @@ public class AuthService {
         }
 
         User user = new User(normalizeDisplayName(request.displayName()), email,
-                passwordEncoder.encode(request.password()), UserRole.VIEWER);
+                passwordEncoder.encode(request.password()), UserRole.CREATOR);
         userRepository.save(user);
         return createResponse(user);
     }
