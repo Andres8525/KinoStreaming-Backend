@@ -16,18 +16,12 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * A live broadcast, listed by Kino while its status is LIVE. The video comes either from the creator's
- * browser camera over WebRTC ({@link LiveSourceType#CAMERA}) or from an external media service that
- * provides an HLS playback URL ({@link LiveSourceType#HLS}).
- */
 @Entity
 @Table(name = "live_streams", indexes = {
         @Index(name = "idx_live_streams_status_started_at", columnList = "status, started_at"),
         @Index(name = "idx_live_streams_creator_id", columnList = "creator_id")
 })
 public class LiveStream {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -49,7 +43,6 @@ public class LiveStream {
     @Column(nullable = false, length = 10)
     private LiveSourceType sourceType = LiveSourceType.HLS;
 
-    /** Public HLS URL; null for camera broadcasts. */
     @Column(length = 2048)
     private String playbackUrl;
 
