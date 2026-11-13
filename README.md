@@ -88,7 +88,7 @@ Render injects `PORT` (Spring reads it automatically). On the free plan the serv
 - `GET /api/health` also reports `build` (build time of the running version) and `cors` (the origins understood from `CORS_ALLOWED_ORIGINS`), the quickest way to check a deployment.
 - `GET /api/health` is public and returns `{ status, database, timestamp }`; it is used by Render as health check.
 
-- `POST /api/auth/register` creates a viewer and returns `{ accessToken, tokenType, email, displayName, role }`. Repeated spaces in the name are collapsed; an email that is already registered returns `409` with the message also under `validationErrors.email`.
+- `POST /api/auth/register` creates an account (every account can publish videos and go live, so it gets the `CREATOR` role) and returns `{ accessToken, tokenType, email, displayName, role }`. Repeated spaces in the name are collapsed; an email that is already registered returns `409` with the message also under `validationErrors.email`.
 - `POST /api/auth/login` authenticates and returns the same response. Send the token as `Authorization: Bearer <token>` (the scheme is case-insensitive and surrounding spaces are ignored).
 - `GET /api/videos` returns the public video catalog.
 - `GET /api/videos/trending` returns up to 20 videos ordered by recorded playback count.
@@ -97,27 +97,44 @@ Render injects `PORT` (Spring reads it automatically). On the free plan the serv
 - `GET /api/feed/recommendations` requires a bearer token and returns `{ strategy, generatedAt, recommendations }`, ranked with collaboration and popularity signals.
 - `GET /api/videos/search?q=` returns up to 50 videos whose title contains the query (case-insensitive). A blank query returns an empty list.
 - `GET /api/users/me` requires a bearer token and returns the authenticated user's `id`, `displayName`, `email` and `role`.
-- `GET /api/creator/videos`, `GET /api/creator/videos/analytics`, and `POST /api/creator/videos` require a bearer token with `CREATOR` role.
-- `DELETE /api/creator/videos/{id}` requires a bearer token with `CREATOR` role, deletes a video owned by the caller together with its recorded interactions, and returns `204`. Videos owned by another creator return `404`.
+- `GET /api/creator/videos`, `GET /api/creator/videos/analytics`, and `POST /api/creator/videos` require a bearer token (any signed-in account).
+- `DELETE /api/creator/videos/{id}` requires a bearer token, deletes a video owned by the caller together with its recorded interactions, and returns `204`. Videos owned by another creator return `404`.
 
 ### Live streaming
 
 - `GET /api/live` (public) lists the broadcasts that are live now; `GET /api/live/{id}` returns one broadcast (live or ended).
-- `POST /api/creator/live` (`CREATOR`) starts a broadcast with `title`, `category`, `playbackUrl` and optional `description` / `thumbnailUrl`. A creator can only have one live broadcast; a second one returns `409`.
-- `GET /api/creator/live/current` (`CREATOR`) returns the caller's live broadcast, or `204` when they are offline.
-- `POST /api/creator/live/{id}/end` (`CREATOR`) ends the caller's broadcast.
+- `POST /api/creator/live` (signed in) starts a broadcast with `title`, `category`, optional `description` / `thumbnailUrl` and `sourceType`:
+  - `CAMERA`: the creator's browser captures the camera and sends the video to each viewer over WebRTC. No `playbackUrl` is needed.
+  - `HLS` (default when omitted): the creator streams with OBS to a media service (Cloudflare Stream, Mux, AWS IVS, nginx-rtmp…) and sends its public `.m3u8` as `playbackUrl` (required, otherwise `400` under `validationErrors.playbackUrl`).
 
-Kino does not ingest video itself. The creator streams with OBS (or similar) to a media service that provides HLS playback (for example Cloudflare Stream, Mux, AWS IVS or an own nginx-rtmp server) and registers the public `.m3u8` playback URL. Before deploying this version on an existing database, run `src/main/resources/db/supabase/2026-11-13-live-streams.sql` in Supabase.
+  A creator can only have one live broadcast; a second one returns `409`.
+- `GET /api/creator/live/current` returns the caller's live broadcast, or `204` when they are offline.
+- `POST /api/creator/live/{id}/end` ends the caller's broadcast.
+
+#### Camera broadcasts (WebRTC signaling)
+
+The video never passes through Kino: the backend only relays one SDP offer and one SDP answer per viewer (ICE candidates are included in the SDP, non-trickle), and then the two browsers talk directly.
+
+1. Viewer (signed in): `POST /api/live/{id}/viewers` with `{ "sdp": "<offer>" }` returns `201 { sessionId, answer: null }`; then polls `GET /api/live/{id}/viewers/{sessionId}` until `answer` is set.
+2. Creator's browser: polls `GET /api/creator/live/{id}/viewers/pending` every couple of seconds (it also works as a heartbeat) and answers each viewer with `POST /api/creator/live/{id}/viewers/{sessionId}/answer` and `{ "sdp": "<answer>" }` (`204`).
+
+A camera broadcast is listed in `GET /api/live` only while the creator's browser keeps polling (30-second timeout), so closing the tab hides it. Unanswered requests expire after 60 seconds. The signaling state is kept in memory, which works with the single Render instance; with several instances it would have to move to a shared store. Browsers connect with public STUN servers; viewers behind very restrictive networks may need a TURN server (configured in the frontend).
+
+Before deploying this version on an existing database, run these migrations in the Supabase SQL Editor, in order: `2026-11-13-live-streams.sql`, `2026-11-13-camera-live.sql` and `2026-11-13-everyone-creator.sql` (all in `src/main/resources/db/supabase/`, all idempotent).
 
 ### Kino IA
 
 `GET /api/ai/trending-insights` (public) returns `{ generatedAt, source, summary, mostWatched, rising, topCategories, totalViews, liveNow }`: the most watched videos, videos published in the last 7 days that are gaining views, the categories with the most views and a short summary. The result is cached for `AI_CACHE_TTL` (5 minutes by default).
 
-`source` is `kino-analytics` while no AI provider is connected (the summary is written from Kino's statistics) and `ai` when the summary comes from the AI. To connect an AI API:
+`source` is `kino-analytics` while no AI provider is connected (the summary is written from Kino's statistics) and `ai` when the summary comes from the AI.
 
-1. Add a Spring `@Component` that implements `com.kino.backend.ai.AiTextGenerator`. It receives a `TrendingSnapshot` and returns the summary text; read the key and model from `AiProperties`.
-2. Set `AI_ENABLED=true`, `AI_PROVIDER`, `AI_API_KEY` and `AI_MODEL` (in `.env` locally, in the Render dashboard in production). Never commit the key.
-3. If the provider fails or returns nothing, Kino logs a warning and falls back to its own summary, so the dashboard keeps working.
+**Google Gemini is built in** (`GeminiTextGenerator`). To turn it on:
+
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. In the Render dashboard (or `.env` locally) set `AI_ENABLED=true`, `AI_PROVIDER=gemini` and `AI_API_KEY=<your key>`. Optionally `AI_MODEL` (default `gemini-2.5-flash`) and `AI_BASE_URL` (default `https://generativelanguage.googleapis.com/v1beta`). Never commit the key: only the backend uses it, the frontend never sees it.
+3. Save; Render redeploys. `GET /api/ai/trending-insights` then returns `source: "ai"` (results are cached for `AI_CACHE_TTL`).
+
+If Gemini fails, times out (20 s) or returns no text, Kino logs a warning and falls back to its own summary, so the dashboard keeps working. Another provider can be added with a Spring `@Component` implementing `com.kino.backend.ai.AiTextGenerator`.
 
 ## Error format
 
@@ -137,13 +154,7 @@ Validation messages are always in Spanish (they do not depend on the server loca
 
 Malformed JSON bodies and invalid path parameters (for example a non-UUID video id) return `400`, unknown routes return `404`, unsupported HTTP methods return `405`, and unexpected failures return a generic `500` message while the details are logged on the server.
 
-New public registrations are always assigned `VIEWER`; grant `CREATOR` through a trusted administrative process. Video storage is represented by `videoUrl` and `thumbnailUrl`; the binary upload to S3 or another object store and payment processing are not implemented. The frontend player streams directly from the supplied URL, which must be publicly reachable and supported by the browser.
-
-To promote an account after registration, use a trusted database administrator connection, not a public API request:
-
-```sql
-UPDATE users SET role = 'CREATOR' WHERE email = 'creator@example.com';
-```
+Every account can publish videos and go live: new registrations get `CREATOR`, and `/api/creator/**` only requires a signed-in account (older `VIEWER` accounts work too; `2026-11-13-everyone-creator.sql` promotes them). Ownership is checked per video and per broadcast. Video storage is represented by `videoUrl` and `thumbnailUrl`; the binary upload to S3 or another object store and payment processing are not implemented. The frontend player streams directly from the supplied URL, which must be publicly reachable and supported by the browser.
 
 The recommendation endpoint uses a lightweight hybrid ranker: recorded viewer/video pairs contribute collaborative scores, while persisted playback counts contribute popularity scores. It runs locally without an external AI provider or trained machine-learning model; it is an integration-ready baseline, not a production recommendation service. Playback counts are incremented per play request, while each account/video pair is stored once for collaborative filtering.
 
