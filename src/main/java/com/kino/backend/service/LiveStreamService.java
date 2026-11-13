@@ -20,7 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class LiveStreamService {
-
     private final LiveStreamRepository liveStreamRepository;
     private final UserRepository userRepository;
     private final LiveSignalingService signaling;
@@ -69,7 +68,6 @@ public class LiveStreamService {
                 .map(LiveStreamResponse::from);
     }
 
-    /** Live broadcasts; camera broadcasts are listed only while the creator's browser is connected. */
     @Transactional(readOnly = true)
     public List<LiveStreamResponse> listLive() {
         return liveStreamRepository.findByStatusOrderByStartedAtDesc(LiveStreamStatus.LIVE).stream()
@@ -86,7 +84,6 @@ public class LiveStreamService {
                 .orElseThrow(LiveStreamService::streamNotFound);
     }
 
-    /** Creator side of a camera broadcast: heartbeat plus the viewers waiting for an answer. */
     @Transactional(readOnly = true)
     public List<PendingViewerResponse> pendingViewers(String creatorEmail, UUID streamId) {
         return signaling.pendingViewers(ownLiveCameraStream(creatorEmail, streamId).getId());
@@ -97,7 +94,6 @@ public class LiveStreamService {
         signaling.answer(ownLiveCameraStream(creatorEmail, streamId).getId(), sessionId, answer);
     }
 
-    /** Viewer side: hands the viewer's WebRTC offer to the creator's browser. */
     @Transactional(readOnly = true)
     public LiveViewerSessionResponse requestViewing(String viewerEmail, UUID streamId, String offer) {
         LiveStream stream = liveStreamRepository.findById(streamId).orElseThrow(LiveStreamService::streamNotFound);

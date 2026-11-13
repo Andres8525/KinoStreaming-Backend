@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -30,7 +29,6 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    /** Every account can publish videos and go live, so new accounts are created as CREATOR. */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
@@ -51,7 +49,6 @@ public class AuthService {
         return createResponse(user);
     }
 
-    /** Trims the name and collapses repeated whitespace ("  Ana   Ruiz " -> "Ana Ruiz"). */
     static String normalizeDisplayName(String displayName) {
         return displayName.trim().replaceAll("\\s+", " ");
     }

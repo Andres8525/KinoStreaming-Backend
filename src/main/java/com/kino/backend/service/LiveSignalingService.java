@@ -16,20 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Relays the WebRTC connection setup between a creator broadcasting from the browser camera and each viewer.
- *
- * <p>The video never passes through Kino: the viewer's browser sends an SDP offer, the creator's browser
- * (which polls for pending viewers) answers it, and from then on both browsers talk directly. ICE candidates
- * are embedded in the SDP (non-trickle ICE), so one offer and one answer are enough.
- *
- * <p>The state is kept in memory, which is enough for the single backend instance Kino runs on. The creator's
- * polling doubles as a heartbeat: a camera broadcast whose creator has not polled for {@link #BROADCASTER_TIMEOUT}
- * (tab closed, connection lost) is considered offline and hidden from the live list.
- */
 @Service
 public class LiveSignalingService {
-
     static final Duration BROADCASTER_TIMEOUT = Duration.ofSeconds(30);
     static final Duration UNANSWERED_TIMEOUT = Duration.ofSeconds(60);
     static final Duration ANSWERED_RETENTION = Duration.ofMinutes(2);
@@ -47,12 +35,10 @@ public class LiveSignalingService {
         this.clock = clock;
     }
 
-    /** Records that the creator's browser is connected (called when it starts and on every poll). */
     public void heartbeat(UUID streamId) {
         broadcasts.computeIfAbsent(streamId, id -> new Broadcast()).lastSeen = clock.instant();
     }
 
-    /** Records that the creator's browser is connected and returns the viewers waiting for an answer. */
     public List<PendingViewerResponse> pendingViewers(UUID streamId) {
         heartbeat(streamId);
         Broadcast broadcast = broadcasts.get(streamId);
@@ -71,7 +57,6 @@ public class LiveSignalingService {
                 && broadcast.lastSeen.isAfter(clock.instant().minus(BROADCASTER_TIMEOUT));
     }
 
-    /** Number of viewers whose connection was answered recently (an approximation of the current audience). */
     public int viewerCount(UUID streamId) {
         Broadcast broadcast = broadcasts.get(streamId);
         if (broadcast == null) {
@@ -109,7 +94,6 @@ public class LiveSignalingService {
         session.answeredAt = clock.instant();
     }
 
-    /** Forgets everything about a broadcast once it ends. */
     public void close(UUID streamId) {
         broadcasts.remove(streamId);
     }
