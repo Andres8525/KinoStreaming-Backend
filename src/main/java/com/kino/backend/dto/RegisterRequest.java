@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/** Explicit Spanish messages: the frontend shows them next to each field whatever the server locale is. */
 public record RegisterRequest(
         @NotBlank(message = "Escribe tu nombre")
         @Size(max = 120, message = "El nombre puede tener como máximo 120 caracteres")

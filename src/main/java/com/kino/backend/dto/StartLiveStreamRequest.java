@@ -5,10 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * Starts a broadcast. {@code sourceType} defaults to {@code HLS} when omitted (older clients); an HLS
- * broadcast requires {@code playbackUrl}, a {@code CAMERA} broadcast ignores it.
- */
 public record StartLiveStreamRequest(
         @NotBlank(message = "Escribe un título para la transmisión")
         @Size(max = 180, message = "El título puede tener como máximo 180 caracteres")
@@ -25,7 +21,6 @@ public record StartLiveStreamRequest(
         @Pattern(regexp = "https?://\\S+", message = "Debe ser una URL HTTP o HTTPS válida")
         String thumbnailUrl,
         LiveSourceType sourceType) {
-
     public StartLiveStreamRequest(String title, String description, String category, String playbackUrl,
                                   String thumbnailUrl) {
         this(title, description, category, playbackUrl, thumbnailUrl, null);

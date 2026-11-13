@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Explicit Spanish messages so Creator Studio shows readable errors whatever the server locale is. */
 public record CreateVideoRequest(
         @NotBlank(message = "Escribe un título")
         @Size(max = 180, message = "El título puede tener como máximo 180 caracteres")
