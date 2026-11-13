@@ -17,8 +17,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * A live broadcast. The creator streams (for example with OBS) to an external media service
- * and registers the HLS playback URL here; Kino lists it while its status is LIVE.
+ * A live broadcast, listed by Kino while its status is LIVE. The video comes either from the creator's
+ * browser camera over WebRTC ({@link LiveSourceType#CAMERA}) or from an external media service that
+ * provides an HLS playback URL ({@link LiveSourceType#HLS}).
  */
 @Entity
 @Table(name = "live_streams", indexes = {
@@ -44,7 +45,12 @@ public class LiveStream {
     @Column(nullable = false, length = 60)
     private String category;
 
-    @Column(nullable = false, length = 2048)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private LiveSourceType sourceType = LiveSourceType.HLS;
+
+    /** Public HLS URL; null for camera broadcasts. */
+    @Column(length = 2048)
     private String playbackUrl;
 
     @Column(length = 2048)
@@ -65,7 +71,13 @@ public class LiveStream {
 
     public LiveStream(User creator, String title, String description, String category,
                       String playbackUrl, String thumbnailUrl) {
+        this(creator, title, description, category, LiveSourceType.HLS, playbackUrl, thumbnailUrl);
+    }
+
+    public LiveStream(User creator, String title, String description, String category, LiveSourceType sourceType,
+                      String playbackUrl, String thumbnailUrl) {
         this.creator = creator;
+        this.sourceType = sourceType;
         this.title = title;
         this.description = description;
         this.category = category;
@@ -90,6 +102,7 @@ public class LiveStream {
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getCategory() { return category; }
+    public LiveSourceType getSourceType() { return sourceType; }
     public String getPlaybackUrl() { return playbackUrl; }
     public String getThumbnailUrl() { return thumbnailUrl; }
     public LiveStreamStatus getStatus() { return status; }

@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS public.live_streams (
     title         VARCHAR(180)                NOT NULL,
     description   VARCHAR(1000),
     category      VARCHAR(60)                 NOT NULL,
-    playback_url  VARCHAR(2048)               NOT NULL,
+    source_type   VARCHAR(10)                 NOT NULL DEFAULT 'HLS',
+    playback_url  VARCHAR(2048),
     thumbnail_url VARCHAR(2048),
     status        VARCHAR(10)                 NOT NULL DEFAULT 'LIVE',
     started_at    TIMESTAMP(6) WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -100,6 +101,8 @@ CREATE TABLE IF NOT EXISTS public.live_streams (
     CONSTRAINT live_streams_pkey PRIMARY KEY (id),
     CONSTRAINT live_streams_creator_fk FOREIGN KEY (creator_id) REFERENCES public.users (id) ON DELETE CASCADE,
     CONSTRAINT live_streams_status_check CHECK (status IN ('LIVE', 'ENDED')),
+    CONSTRAINT live_streams_source_type_check CHECK (source_type IN ('CAMERA', 'HLS')),
+    CONSTRAINT live_streams_hls_url_check CHECK (source_type <> 'HLS' OR playback_url IS NOT NULL),
     CONSTRAINT live_streams_ended_check CHECK ((status = 'LIVE' AND ended_at IS NULL) OR (status = 'ENDED' AND ended_at IS NOT NULL))
 );
 
