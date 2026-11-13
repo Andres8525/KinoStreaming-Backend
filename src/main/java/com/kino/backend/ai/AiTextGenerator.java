@@ -5,7 +5,8 @@ import java.util.Optional;
 /**
  * Integration point for the AI provider that writes the "Kino IA" trending summary.
  *
- * <p>To connect an AI API, add a Spring bean ({@code @Component}) implementing this interface that
+ * <p>Kino ships {@link GeminiTextGenerator} (Google Gemini, {@code AI_PROVIDER=gemini}). To connect another
+ * AI API, add a Spring bean ({@code @Component}) implementing this interface that
  * sends the snapshot (most watched videos, rising videos, top categories) to the provider and returns
  * a short summary in Spanish. Read its settings from {@link AiProperties} (environment variables
  * {@code AI_PROVIDER}, {@code AI_API_KEY}, {@code AI_MODEL}, {@code AI_BASE_URL}) and set
