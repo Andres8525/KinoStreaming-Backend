@@ -89,7 +89,8 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("El correo ya está registrado"));
+                .andExpect(jsonPath("$.message").value("El correo ya está registrado"))
+                .andExpect(jsonPath("$.validationErrors.email").value("El correo ya está registrado"));
     }
 
     @Test
