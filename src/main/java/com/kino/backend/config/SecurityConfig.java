@@ -29,7 +29,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
     private static final List<String> EXPOSED_HEADERS = List.of("Authorization");
@@ -50,7 +49,6 @@ public class SecurityConfig {
         }
     }
 
-    /** The parsed CORS_ALLOWED_ORIGINS, shared with the health endpoint for diagnostics. */
     @Bean
     CorsOrigins corsOrigins() {
         return corsOrigins;
@@ -102,12 +100,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos", "/api/videos/**").permitAll()
-                        // Watching a camera broadcast (WebRTC signaling) requires an account.
                         .requestMatchers("/api/live/*/viewers", "/api/live/*/viewers/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/live", "/api/live/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ai/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
-                        // Every signed-in account can publish and go live; ownership is checked per resource.
                         .requestMatchers("/api/creator/**").authenticated()
                         .requestMatchers("/api/feed/**").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
