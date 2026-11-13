@@ -35,6 +35,14 @@ class CorsOriginsTest {
     }
 
     @Test
+    void addsTheSchemeToBareDomains() {
+        CorsOrigins origins = CorsOrigins.parse("kino-streamingg-frontend.vercel.app, localhost:4200, kino-*.vercel.app");
+
+        assertEquals(List.of("https://kino-streamingg-frontend.vercel.app", "http://localhost:4200"), origins.origins());
+        assertEquals(List.of("https://kino-*.vercel.app"), origins.patterns());
+    }
+
+    @Test
     void handlesEmptyValues() {
         assertTrue(CorsOrigins.parse(null).isEmpty());
         assertTrue(CorsOrigins.parse(" , ; ").isEmpty());
