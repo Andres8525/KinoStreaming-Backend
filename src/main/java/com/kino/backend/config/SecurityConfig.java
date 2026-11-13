@@ -47,6 +47,12 @@ public class SecurityConfig {
         }
     }
 
+    /** The parsed CORS_ALLOWED_ORIGINS, shared with the health endpoint for diagnostics. */
+    @Bean
+    CorsOrigins corsOrigins() {
+        return corsOrigins;
+    }
+
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
