@@ -17,17 +17,9 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/**
- * Writes the "Kino IA" summary with Google Gemini (REST {@code models/{model}:generateContent}).
- *
- * <p>Active when {@code AI_PROVIDER=gemini}. Also set {@code AI_ENABLED=true}, {@code AI_API_KEY} (a key from
- * Google AI Studio) and optionally {@code AI_MODEL} (default {@value #DEFAULT_MODEL}) and {@code AI_BASE_URL}.
- * Any failure makes {@link TrendingInsightsService} fall back to Kino's own summary.
- */
 @Component
 @ConditionalOnProperty(prefix = "kino.ai", name = "provider", havingValue = "gemini")
 public class GeminiTextGenerator implements AiTextGenerator {
-
     static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
     static final String DEFAULT_MODEL = "gemini-2.5-flash";
     private static final int CONNECT_TIMEOUT_MS = 5_000;
@@ -77,7 +69,6 @@ public class GeminiTextGenerator implements AiTextGenerator {
         return properties.model() == null || properties.model().isBlank() ? DEFAULT_MODEL : properties.model().trim();
     }
 
-    /** Joins the text parts of the first candidate; null when Gemini returned no text (for example, blocked). */
     static String extractText(JsonNode response) {
         if (response == null) {
             return null;

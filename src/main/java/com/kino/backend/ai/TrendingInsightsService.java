@@ -24,14 +24,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * "Kino IA" trending analyzer: finds the most watched videos, rising videos and top categories,
- * and asks the configured {@link AiTextGenerator} for a summary. Results are cached for
- * {@code kino.ai.cache-ttl} so a paid AI provider is not called on every dashboard load.
- */
 @Service
 public class TrendingInsightsService {
-
     static final String SOURCE_AI = "ai";
     static final String SOURCE_ANALYTICS = "kino-analytics";
     private static final Logger LOGGER = LoggerFactory.getLogger(TrendingInsightsService.class);
@@ -69,7 +63,6 @@ public class TrendingInsightsService {
         return response;
     }
 
-    /** Drops the cached analysis so the next request recomputes it. */
     public void evictCache() {
         cache.set(null);
     }
