@@ -38,8 +38,11 @@ public class SecurityConfig {
 
     private final CorsOrigins corsOrigins;
 
-    public SecurityConfig(@Value("${kino.cors.allowed-origins:http://localhost:4200}") String allowedOrigins) {
-        this.corsOrigins = CorsOrigins.parse(allowedOrigins);
+    public SecurityConfig(
+            @Value("${kino.cors.allowed-origins:http://localhost:4200}") String allowedOrigins,
+            @Value("${kino.cors.allow-vercel-previews:true}") boolean allowVercelPreviews,
+            @Value("${kino.cors.allow-localhost:true}") boolean allowLocalhost) {
+        this.corsOrigins = CorsOrigins.parse(allowedOrigins).withDerivedOrigins(allowVercelPreviews, allowLocalhost);
         if (corsOrigins.isEmpty()) {
             LOGGER.warn("CORS_ALLOWED_ORIGINS is empty: browsers on other domains will not be able to call the API");
         } else {
