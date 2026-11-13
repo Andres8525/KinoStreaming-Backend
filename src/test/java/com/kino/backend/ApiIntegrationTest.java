@@ -162,7 +162,17 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.validationErrors.password").exists());
+                .andExpect(jsonPath("$.validationErrors.password").value("La contraseña debe tener entre 8 y 72 caracteres"));
+    }
+
+    @Test
+    void loginValidationMessagesAreInSpanish() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("email", "no-es-un-correo", "password", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.email").value("Introduce un correo electrónico válido"))
+                .andExpect(jsonPath("$.validationErrors.password").value("Escribe tu contraseña"));
     }
 
     @Test
