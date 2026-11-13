@@ -56,6 +56,7 @@ public class AuthService {
     }
 
     private AuthResponse createResponse(User user) {
-        return new AuthResponse(jwtService.generateToken(user), "Bearer", user.getEmail(), user.getRole());
+        return new AuthResponse(jwtService.generateToken(user), "Bearer", user.getEmail(), user.getDisplayName(),
+                user.getRole());
     }
 }
