@@ -6,11 +6,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** "Kino IA": public trending analysis shown on the dashboard. */
 @RestController
 @RequestMapping("/api/ai")
 public class AiInsightsController {
-
     private final TrendingInsightsService trendingInsightsService;
 
     public AiInsightsController(TrendingInsightsService trendingInsightsService) {

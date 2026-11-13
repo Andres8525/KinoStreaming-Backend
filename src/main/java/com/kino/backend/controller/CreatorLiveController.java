@@ -19,14 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Creator endpoints to start, check and end their own live broadcast. For camera broadcasts the creator's
- * browser polls {@code /viewers/pending} (also a heartbeat) and answers each viewer's WebRTC offer.
- */
 @RestController
 @RequestMapping("/api/creator/live")
 public class CreatorLiveController {
-
     private final LiveStreamService liveStreamService;
 
     public CreatorLiveController(LiveStreamService liveStreamService) {

@@ -17,14 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Endpoints to discover and watch live broadcasts. Listing is public; connecting to a camera broadcast
- * ({@code /viewers}) requires a signed-in account.
- */
 @RestController
 @RequestMapping("/api/live")
 public class LiveStreamController {
-
     private final LiveStreamService liveStreamService;
 
     public LiveStreamController(LiveStreamService liveStreamService) {
@@ -41,7 +36,6 @@ public class LiveStreamController {
         return liveStreamService.findById(streamId);
     }
 
-    /** Sends the viewer's WebRTC offer to the creator's browser; poll the returned session for the answer. */
     @PostMapping("/{streamId}/viewers")
     @ResponseStatus(HttpStatus.CREATED)
     public LiveViewerSessionResponse requestViewing(@PathVariable UUID streamId,
