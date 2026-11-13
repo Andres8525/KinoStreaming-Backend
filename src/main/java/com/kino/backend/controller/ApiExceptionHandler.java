@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -70,6 +71,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException exception) {
         HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
         return error(status, exception.getReason() == null ? status.getReasonPhrase() : exception.getReason(), Map.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException exception) {
+        LOGGER.warn("Data integrity violation: {}", exception.getMostSpecificCause().getMessage());
+        return error(HttpStatus.CONFLICT, "La operación entra en conflicto con datos existentes", Map.of());
     }
 
     @ExceptionHandler(Exception.class)
