@@ -11,14 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-/**
- * Production configuration: only the main Vercel domain is configured, yet the frontend is also opened from
- * the deployment URL shown by Vercel's "Visit" button and from the local Angular dev server.
- */
 @SpringBootTest(properties = "kino.cors.allowed-origins=kino-streamingg-frontend.vercel.app")
 @AutoConfigureMockMvc
 class CorsDerivedOriginsIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 

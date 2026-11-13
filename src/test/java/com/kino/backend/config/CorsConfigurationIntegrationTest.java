@@ -10,11 +10,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** CORS with a value typed the way it often is in a hosting dashboard (quotes, trailing slash, ';', pattern). */
 @SpringBootTest(properties = "kino.cors.allowed-origins= \"https://kino-frontend.vercel.app/\" ; https://kino-frontend-*.vercel.app")
 @AutoConfigureMockMvc
 class CorsConfigurationIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
