@@ -83,6 +83,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos", "/api/videos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/live", "/api/live/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
                         .requestMatchers("/api/creator/**").hasRole("CREATOR")
                         .requestMatchers("/api/feed/**").authenticated()
