@@ -72,7 +72,19 @@ docker run --rm -p 8081:8081 `
   kino-backend
 ```
 
+### Deploy to Render
+
+The repository includes a Render Blueprint (`render.yaml`) that deploys the Docker image as a web service in the `virginia` region (same AWS region as the Supabase project), with `/api/health` as health check.
+
+1. Render > **New** > **Blueprint**, connect GitHub and select this repository. Render reads `render.yaml`.
+2. Fill in the secret values it asks for: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (Supabase Session pooler values) and `CORS_ALLOWED_ORIGINS` (frontend URL). `JWT_SECRET` is generated automatically.
+3. Click **Apply**. When the deploy finishes, `https://<service-name>.onrender.com/api/health` must return `{"status":"UP","database":"UP"}`.
+
+Render injects `PORT` (Spring reads it automatically). On the free plan the service sleeps after 15 minutes without traffic, and the first request afterwards takes about a minute.
+
 ## Endpoints
+
+- `GET /api/health` is public and returns `{ status, database, timestamp }`; it is used by Render as health check.
 
 - `POST /api/auth/register` creates a viewer and returns a bearer token.
 - `POST /api/auth/login` authenticates and returns a bearer token.
