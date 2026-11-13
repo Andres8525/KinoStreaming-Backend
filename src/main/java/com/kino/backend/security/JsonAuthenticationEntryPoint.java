@@ -14,12 +14,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
-/**
- * Writes a JSON {@link ApiError} when a protected endpoint is called without valid credentials.
- */
 @Component
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
-
     private final ObjectMapper objectMapper;
 
     public JsonAuthenticationEntryPoint(ObjectMapper objectMapper) {

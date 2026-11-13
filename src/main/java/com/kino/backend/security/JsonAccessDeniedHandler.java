@@ -14,12 +14,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
-/**
- * Writes a JSON {@link ApiError} when an authenticated user lacks the role required by an endpoint.
- */
 @Component
 public class JsonAccessDeniedHandler implements AccessDeniedHandler {
-
     private final ObjectMapper objectMapper;
 
     public JsonAccessDeniedHandler(ObjectMapper objectMapper) {

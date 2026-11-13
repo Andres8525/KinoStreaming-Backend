@@ -16,7 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
@@ -55,7 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /** Extracts the token from "Bearer <token>"; the scheme is case-insensitive and extra spaces are ignored. */
     static String bearerToken(String authorization) {
         if (authorization == null) {
             return null;
