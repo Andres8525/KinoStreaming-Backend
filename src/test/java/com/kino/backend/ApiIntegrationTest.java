@@ -32,7 +32,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 class ApiIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -247,7 +246,6 @@ class ApiIntegrationTest {
         String payload = objectMapper.writeValueAsString(Map.of(
                 "title", "Directo", "category", "Música", "playbackUrl", "https://live.example.com/a.m3u8"));
 
-        // Accounts created as VIEWER before every account became a creator can also go live.
         String viewerStream = mockMvc.perform(post("/api/creator/live")
                         .header("Authorization", "Bearer " + jwtService.generateToken(viewer))
                         .contentType(MediaType.APPLICATION_JSON).content(payload))
