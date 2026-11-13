@@ -80,7 +80,10 @@ The repository includes a Render Blueprint (`render.yaml`) that deploys the Dock
 2. Fill in the secret values it asks for: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (Supabase Session pooler values) and `CORS_ALLOWED_ORIGINS` (frontend URL). `JWT_SECRET` is generated automatically.
 3. Click **Apply**. When the deploy finishes, `https://<service-name>.onrender.com/api/health` must return `{"status":"UP","database":"UP"}`.
 
-Render injects `PORT` (Spring reads it automatically). On the free plan the service sleeps after 15 minutes without traffic, and the first request afterwards takes about a minute.
+Render injects `PORT` (Spring reads it automatically). On the free plan the service sleeps after 15 minutes without traffic, and the first request afterwards takes about a minute. To avoid that:
+
+- **Keep-alive**: `.github/workflows/keep-alive.yml` calls `/api/health` every 10 minutes from GitHub Actions, so the service never sleeps and the Supabase connection stays warm (one always-on service fits in the 750 free instance hours per month). Enable Actions in the repository; set the `KINO_HEALTH_URL` repository variable if the service URL changes. GitHub may delay scheduled runs by a few minutes and disables them after 60 days without commits, so re-enable the workflow from the Actions tab if needed.
+- **Faster cold starts**: the Docker image runs the extracted jar (`-Djarmode=tools extract`), limits JIT compilation (`-XX:TieredStopAtLevel=1`) for the free plan's small CPU, bootstraps JPA repositories in the background and disables JMX. Responses are gzip-compressed.
 
 ## Endpoints
 
