@@ -31,7 +31,7 @@ $env:JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long"
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8081` (port 8080 is often taken by other local tools such as Jenkins; override it with `PORT`). CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list to allow other origins.
+The API listens on `http://localhost:8081` (port 8080 is often taken by other local tools such as Jenkins; override it with `PORT`). CORS allows the Angular dev server at `http://localhost:4200` for GET, POST, PUT, DELETE and OPTIONS, including the `Authorization` header. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list to allow other origins, for example `https://kino-streamingg-frontend.vercel.app,https://kino-streamingg-frontend-*.vercel.app,http://localhost:4200`. Entries containing `*` are patterns (useful for Vercel preview deployments); spaces, quotes, `;` separators and trailing slashes are tolerated. The backend logs the effective origins at startup (`CORS allowed origins: ...`), which is the first thing to check if the browser reports a CORS error.
 
 `.env.example` lists every supported environment variable. `JWT_SECRET` must be at least 32 bytes long; the application refuses to start otherwise.
 
