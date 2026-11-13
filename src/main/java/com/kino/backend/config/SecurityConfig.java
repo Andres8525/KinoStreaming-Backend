@@ -5,6 +5,8 @@ import com.kino.backend.security.JsonAccessDeniedHandler;
 import com.kino.backend.security.JsonAuthenticationEntryPoint;
 import com.kino.backend.security.JwtAuthenticationFilter;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,16 +34,24 @@ public class SecurityConfig {
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
     private static final List<String> EXPOSED_HEADERS = List.of("Authorization");
 
-    private final List<String> allowedOrigins;
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfig.class);
 
-    public SecurityConfig(@Value("${kino.cors.allowed-origins:http://localhost:4200}") List<String> allowedOrigins) {
-        this.allowedOrigins = List.copyOf(allowedOrigins);
+    private final CorsOrigins corsOrigins;
+
+    public SecurityConfig(@Value("${kino.cors.allowed-origins:http://localhost:4200}") String allowedOrigins) {
+        this.corsOrigins = CorsOrigins.parse(allowedOrigins);
+        if (corsOrigins.isEmpty()) {
+            LOGGER.warn("CORS_ALLOWED_ORIGINS is empty: browsers on other domains will not be able to call the API");
+        } else {
+            LOGGER.info("CORS allowed origins: {} patterns: {}", corsOrigins.origins(), corsOrigins.patterns());
+        }
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(corsOrigins.origins());
+        configuration.setAllowedOriginPatterns(corsOrigins.patterns());
         configuration.setAllowedMethods(ALLOWED_METHODS);
         configuration.setAllowedHeaders(ALLOWED_HEADERS);
         configuration.setExposedHeaders(EXPOSED_HEADERS);
