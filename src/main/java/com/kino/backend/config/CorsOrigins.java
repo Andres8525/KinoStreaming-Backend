@@ -84,6 +84,50 @@ public record CorsOrigins(List<String> origins, List<String> patterns) {
         return -1;
     }
 
+    /**
+     * Adds the origins people reach the frontend from without thinking of them as different sites.
+     *
+     * <ul>
+     *   <li>Vercel serves every deployment also on its own URL ({@code https://<project>-<hash>-<team>.vercel.app},
+     *   opened by the dashboard's "Visit" button) and on git branch URLs. For each configured
+     *   {@code https://<project>.vercel.app} the pattern {@code https://<project>-*.vercel.app} is added.</li>
+     *   <li>The Angular dev server ({@code http://localhost:<port>} / {@code http://127.0.0.1:<port>}).</li>
+     * </ul>
+     *
+     * <p>The API authenticates with bearer tokens, never cookies, so allowing an extra origin does not expose
+     * a signed-in user's session to it.
+     */
+    public CorsOrigins withDerivedOrigins(boolean vercelPreviews, boolean localDevelopment) {
+        Set<String> derived = new LinkedHashSet<>(patterns);
+        if (vercelPreviews) {
+            for (String origin : origins) {
+                String previews = vercelPreviewPattern(origin);
+                if (previews != null) {
+                    derived.add(previews);
+                }
+            }
+        }
+        if (localDevelopment) {
+            derived.add("http://localhost:[*]");
+            derived.add("http://127.0.0.1:[*]");
+        }
+        return new CorsOrigins(origins, new ArrayList<>(derived));
+    }
+
+    private static final String VERCEL_SUFFIX = ".vercel.app";
+
+    private static String vercelPreviewPattern(String origin) {
+        String prefix = "https://";
+        if (!origin.startsWith(prefix) || !origin.endsWith(VERCEL_SUFFIX)) {
+            return null;
+        }
+        String project = origin.substring(prefix.length(), origin.length() - VERCEL_SUFFIX.length());
+        if (project.isEmpty() || project.contains(".") || project.contains(":")) {
+            return null;
+        }
+        return prefix + project + "-*" + VERCEL_SUFFIX;
+    }
+
     public boolean isEmpty() {
         return origins.isEmpty() && patterns.isEmpty();
     }

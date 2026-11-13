@@ -43,6 +43,24 @@ class CorsOriginsTest {
     }
 
     @Test
+    void derivesVercelDeploymentAndLocalhostPatterns() {
+        CorsOrigins origins = CorsOrigins.parse("kino-streamingg-frontend.vercel.app, https://kino.example.com")
+                .withDerivedOrigins(true, true);
+
+        assertEquals(List.of("https://kino-streamingg-frontend.vercel.app", "https://kino.example.com"),
+                origins.origins());
+        assertEquals(List.of("https://kino-streamingg-frontend-*.vercel.app", "http://localhost:[*]",
+                "http://127.0.0.1:[*]"), origins.patterns());
+    }
+
+    @Test
+    void derivedPatternsCanBeTurnedOff() {
+        CorsOrigins origins = CorsOrigins.parse("https://kino.vercel.app").withDerivedOrigins(false, false);
+
+        assertTrue(origins.patterns().isEmpty());
+    }
+
+    @Test
     void handlesEmptyValues() {
         assertTrue(CorsOrigins.parse(null).isEmpty());
         assertTrue(CorsOrigins.parse(" , ; ").isEmpty());
