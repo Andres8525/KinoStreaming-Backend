@@ -12,5 +12,5 @@ WORKDIR /app
 RUN addgroup -S kino && adduser -S kino -G kino
 COPY --from=build /app/target/kino-backend-*.jar app.jar
 USER kino
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
