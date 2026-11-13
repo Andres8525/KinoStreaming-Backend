@@ -51,6 +51,9 @@ class ApiIntegrationTest {
         @Autowired
         private Validator validator;
 
+    @Autowired
+    private com.kino.backend.ai.TrendingInsightsService trendingInsightsService;
+
     @Test
     void registerIssuesViewerTokenAndRecommendationsAcceptIt() throws Exception {
         String payload = objectMapper.writeValueAsString(
@@ -256,6 +259,25 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/creator/live/{streamId}/end", streamId)
                         .header("Authorization", "Bearer " + jwtService.generateToken(owner)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void trendingInsightsHighlightTheMostWatchedVideo() throws Exception {
+        var creator = createUser("Insights Creator", "insights-creator@example.com", UserRole.CREATOR);
+        var viewer = createUser("Insights Viewer", "insights-viewer@example.com", UserRole.VIEWER);
+        UUID videoId = publishVideo(creator, "Fenómeno de la semana");
+        for (int view = 0; view < 25; view++) {
+            recordView(videoId, viewer);
+        }
+        trendingInsightsService.evictCache();
+
+        mockMvc.perform(get("/api/ai/trending-insights"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("kino-analytics"))
+                .andExpect(jsonPath("$.mostWatched[0].id").value(videoId.toString()))
+                .andExpect(jsonPath("$.summary").value(org.hamcrest.Matchers.containsString("Fenómeno de la semana")))
+                .andExpect(jsonPath("$.topCategories[0].category").value("Documental"))
+                .andExpect(jsonPath("$.totalViews").value(org.hamcrest.Matchers.greaterThanOrEqualTo(25)));
     }
 
     @Test
