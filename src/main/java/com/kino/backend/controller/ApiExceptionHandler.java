@@ -2,6 +2,7 @@ package com.kino.backend.controller;
 
 import com.kino.backend.dto.ApiError;
 import com.kino.backend.service.FieldConflictException;
+import com.kino.backend.service.FieldValidationException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
@@ -77,6 +78,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(FieldConflictException.class)
     public ResponseEntity<ApiError> handleFieldConflict(FieldConflictException exception) {
         return error(HttpStatus.CONFLICT, exception.getMessage(), Map.of(exception.getField(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(FieldValidationException.class)
+    public ResponseEntity<ApiError> handleFieldValidation(FieldValidationException exception) {
+        return error(HttpStatus.BAD_REQUEST, "Revisa los campos enviados",
+                Map.of(exception.getField(), exception.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -1,10 +1,13 @@
 package com.kino.backend.controller;
 
 import com.kino.backend.dto.LiveStreamResponse;
+import com.kino.backend.dto.PendingViewerResponse;
+import com.kino.backend.dto.SessionDescriptionRequest;
 import com.kino.backend.dto.StartLiveStreamRequest;
 import com.kino.backend.service.LiveStreamService;
 import jakarta.validation.Valid;
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Creator endpoints to start, check and end their own live broadcast. */
+/**
+ * Creator endpoints to start, check and end their own live broadcast. For camera broadcasts the creator's
+ * browser polls {@code /viewers/pending} (also a heartbeat) and answers each viewer's WebRTC offer.
+ */
 @RestController
 @RequestMapping("/api/creator/live")
 public class CreatorLiveController {
@@ -38,6 +44,18 @@ public class CreatorLiveController {
         return liveStreamService.current(principal.getName())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{streamId}/viewers/pending")
+    public List<PendingViewerResponse> pendingViewers(@PathVariable UUID streamId, Principal principal) {
+        return liveStreamService.pendingViewers(principal.getName(), streamId);
+    }
+
+    @PostMapping("/{streamId}/viewers/{sessionId}/answer")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void answerViewer(@PathVariable UUID streamId, @PathVariable UUID sessionId,
+                             @Valid @RequestBody SessionDescriptionRequest request, Principal principal) {
+        liveStreamService.answerViewer(principal.getName(), streamId, sessionId, request.sdp());
     }
 
     @PostMapping("/{streamId}/end")

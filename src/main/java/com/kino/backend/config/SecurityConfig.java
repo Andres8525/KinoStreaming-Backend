@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos", "/api/videos/**").permitAll()
+                        // Watching a camera broadcast (WebRTC signaling) requires an account.
+                        .requestMatchers("/api/live/*/viewers", "/api/live/*/viewers/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/live", "/api/live/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ai/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()

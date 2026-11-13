@@ -281,6 +281,71 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void anotherAccountCanWatchACameraBroadcast() throws Exception {
+        var jhoan = createUser("Jhoan", "camera-jhoan@example.com", UserRole.CREATOR);
+        var edison = createUser("Edison", "camera-edison@example.com", UserRole.VIEWER);
+        String jhoanToken = "Bearer " + jwtService.generateToken(jhoan);
+        String edisonToken = "Bearer " + jwtService.generateToken(edison);
+
+        String created = mockMvc.perform(post("/api/creator/live").header("Authorization", jhoanToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", "Directo desde mi cámara", "category", "Charlas", "sourceType", "CAMERA"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sourceType").value("CAMERA"))
+                .andExpect(jsonPath("$.playbackUrl").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        String streamId = objectMapper.readTree(created).get("id").asText();
+
+        mockMvc.perform(get("/api/live"))
+                .andExpect(jsonPath("$[?(@.id == '" + streamId + "')].creator.displayName").value("Jhoan"));
+
+        Map<String, String> offer = Map.of("sdp", "v=0 offer-from-edison");
+        mockMvc.perform(post("/api/live/{streamId}/viewers", streamId)
+                        .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(offer)))
+                .andExpect(status().isUnauthorized());
+        String session = mockMvc.perform(post("/api/live/{streamId}/viewers", streamId).header("Authorization", edisonToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(offer)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.answer").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        String sessionId = objectMapper.readTree(session).get("sessionId").asText();
+
+        mockMvc.perform(get("/api/creator/live/{streamId}/viewers/pending", streamId).header("Authorization", edisonToken))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/creator/live/{streamId}/viewers/pending", streamId).header("Authorization", jhoanToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sessionId").value(sessionId))
+                .andExpect(jsonPath("$[0].viewerName").value("Edison"))
+                .andExpect(jsonPath("$[0].offer").value("v=0 offer-from-edison"));
+        mockMvc.perform(post("/api/creator/live/{streamId}/viewers/{sessionId}/answer", streamId, sessionId)
+                        .header("Authorization", jhoanToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("sdp", "v=0 answer-from-jhoan"))))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/live/{streamId}/viewers/{sessionId}", streamId, sessionId).header("Authorization", edisonToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("v=0 answer-from-jhoan"));
+
+        mockMvc.perform(post("/api/creator/live/{streamId}/end", streamId).header("Authorization", jhoanToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/live/{streamId}/viewers", streamId).header("Authorization", edisonToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(offer)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void hlsBroadcastsStillRequireAPlaybackUrl() throws Exception {
+        var creator = createUser("Hls Creator", "hls-creator@example.com", UserRole.CREATOR);
+
+        mockMvc.perform(post("/api/creator/live").header("Authorization", "Bearer " + jwtService.generateToken(creator))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", "Directo OBS", "category", "Música", "sourceType", "HLS"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.playbackUrl").value("Indica la URL de reproducción HLS"));
+    }
+
+    @Test
     void trendingInsightsHighlightTheMostWatchedVideo() throws Exception {
         var creator = createUser("Insights Creator", "insights-creator@example.com", UserRole.CREATOR);
         var viewer = createUser("Insights Viewer", "insights-viewer@example.com", UserRole.VIEWER);

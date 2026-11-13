@@ -1,5 +1,6 @@
 package com.kino.backend.dto;
 
+import com.kino.backend.model.LiveSourceType;
 import com.kino.backend.model.LiveStream;
 import com.kino.backend.model.LiveStreamStatus;
 import java.time.Instant;
@@ -10,6 +11,7 @@ public record LiveStreamResponse(
         String title,
         String description,
         String category,
+        LiveSourceType sourceType,
         String playbackUrl,
         String thumbnailUrl,
         LiveStreamStatus status,
@@ -19,7 +21,7 @@ public record LiveStreamResponse(
 
     public static LiveStreamResponse from(LiveStream stream) {
         return new LiveStreamResponse(stream.getId(), stream.getTitle(), stream.getDescription(), stream.getCategory(),
-                stream.getPlaybackUrl(), stream.getThumbnailUrl(), stream.getStatus(),
+                stream.getSourceType(), stream.getPlaybackUrl(), stream.getThumbnailUrl(), stream.getStatus(),
                 CreatorSummaryResponse.from(stream.getCreator()), stream.getStartedAt(), stream.getEndedAt());
     }
 }
