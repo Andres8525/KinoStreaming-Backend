@@ -27,6 +27,14 @@ class CorsOriginsTest {
     }
 
     @Test
+    void keepsOnlyTheOriginOfUrlsWithPaths() {
+        CorsOrigins origins = CorsOrigins.parse(
+                "https://kino-streamingg-frontend.vercel.app/login?returnUrl=%2F,http://localhost:4200/#top");
+
+        assertEquals(List.of("https://kino-streamingg-frontend.vercel.app", "http://localhost:4200"), origins.origins());
+    }
+
+    @Test
     void handlesEmptyValues() {
         assertTrue(CorsOrigins.parse(null).isEmpty());
         assertTrue(CorsOrigins.parse(" , ; ").isEmpty());

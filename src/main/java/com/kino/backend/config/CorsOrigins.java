@@ -48,7 +48,28 @@ public record CorsOrigins(List<String> origins, List<String> patterns) {
         while (!value.isEmpty() && (value.endsWith("\"") || value.endsWith("'") || value.endsWith("/"))) {
             value = value.substring(0, value.length() - 1);
         }
-        return value.trim();
+        return stripPath(value.trim());
+    }
+
+    /** An origin is scheme://host[:port]; drop any path, query or fragment pasted from the address bar. */
+    private static String stripPath(String value) {
+        int schemeEnd = value.indexOf("://");
+        if (schemeEnd < 0) {
+            return value;
+        }
+        int pathStart = indexOfAny(value, schemeEnd + 3, '/', '?', '#');
+        return pathStart < 0 ? value : value.substring(0, pathStart);
+    }
+
+    private static int indexOfAny(String value, int from, char... characters) {
+        for (int index = from; index < value.length(); index++) {
+            for (char character : characters) {
+                if (value.charAt(index) == character) {
+                    return index;
+                }
+            }
+        }
+        return -1;
     }
 
     public boolean isEmpty() {
