@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package kino.v1;
+
+option java_multiple_files = true;
+option java_package = "com.kino.backend.grpc.v1";
+option java_outer_classname = "KinoProto";
+
+service CatalogService {
+  rpc ListTrendingVideos(ListTrendingVideosRequest) returns (ListTrendingVideosResponse);
+  rpc GetVideo(GetVideoRequest) returns (Video);
+}
+
+service InsightsService {
+  rpc GetTrendingInsights(GetTrendingInsightsRequest) returns (TrendingInsights);
+}
+
+service LiveService {
+  rpc ListLiveStreams(ListLiveStreamsRequest) returns (LiveStreamsSnapshot);
+  rpc WatchLiveStreams(WatchLiveStreamsRequest) returns (stream LiveStreamsSnapshot);
+}
+
+message Video {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string video_url = 4;
+  string thumbnail_url = 5;
+  repeated string tags = 6;
+  string category = 7;
+  int64 view_count = 8;
+  string creator_name = 9;
+  string created_at = 10;
+  double access_price = 11;
+}
+
+message ListTrendingVideosRequest {
+  int32 limit = 1;
+  string category = 2;
+}
+
+message ListTrendingVideosResponse {
+  repeated Video videos = 1;
+}
+
+message GetVideoRequest {
+  string id = 1;
+}
+
+message GetTrendingInsightsRequest {
+}
+
+message CategoryInsight {
+  string category = 1;
+  int64 video_count = 2;
+  int64 total_views = 3;
+}
+
+message TrendingInsights {
+  string generated_at = 1;
+  string source = 2;
+  string summary = 3;
+  repeated Video most_watched = 4;
+  repeated Video rising = 5;
+  repeated CategoryInsight top_categories = 6;
+  int64 total_views = 7;
+  int32 live_now = 8;
+}
+
+message LiveStream {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string category = 4;
+  string source_type = 5;
+  string playback_url = 6;
+  string creator_name = 7;
+  string started_at = 8;
+}
+
+message ListLiveStreamsRequest {
+}
+
+message WatchLiveStreamsRequest {
+  int32 interval_seconds = 1;
+  int32 max_updates = 2;
+}
+
+message LiveStreamsSnapshot {
+  string generated_at = 1;
+  repeated LiveStream streams = 2;
+}
