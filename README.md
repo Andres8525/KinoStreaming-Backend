@@ -82,7 +82,7 @@ The repository includes a Render Blueprint (`render.yaml`) that deploys the Dock
 
 Render injects `PORT` (Spring reads it automatically). On the free plan the service sleeps after 15 minutes without traffic, and the first request afterwards takes about a minute. To avoid that:
 
-- **Keep-alive**: `.github/workflows/keep-alive.yml` calls `/api/health` every 10 minutes from GitHub Actions, so the service never sleeps and the Supabase connection stays warm (one always-on service fits in the 750 free instance hours per month). Enable Actions in the repository; set the `KINO_HEALTH_URL` repository variable if the service URL changes. GitHub may delay scheduled runs by a few minutes and disables them after 60 days without commits, so re-enable the workflow from the Actions tab if needed.
+- **Keep-alive**: `.github/workflows/keep-alive.yml` keeps one GitHub Actions job running that calls `/api/health` every 4 minutes for almost 6 hours; a new run is queued every 30 minutes and takes over when the previous one ends (`concurrency` keeps only one running), so the service never reaches the 15-minute sleep timeout. GitHub delays scheduled runs (often by hours), which is why a single short ping per run was not enough. The repository is public, so these Actions minutes are free; one always-on service fits in Render's 750 free instance hours per month. For extra safety add a free external monitor (UptimeRobot or cron-job.org) on the same URL every 5 minutes. Set the `KINO_HEALTH_URL` repository variable if the service URL changes.
 - **Faster cold starts**: the Docker image runs the extracted jar (`-Djarmode=tools extract`), limits JIT compilation (`-XX:TieredStopAtLevel=1`) for the free plan's small CPU, bootstraps JPA repositories in the background and disables JMX. Responses are gzip-compressed.
 
 ## Endpoints
@@ -149,6 +149,30 @@ To turn it on, set in the Render dashboard (or `.env` locally): `AI_ENABLED=true
 `GET /api/health` reports `ai: { enabled, provider, model, apiKeyConfigured, active }` (never the key), so after saving the variables you can confirm that `active` is `true`. `GET /api/ai/trending-insights` then returns `source: "ai"`; results are cached for `AI_CACHE_TTL`.
 
 If the provider fails, times out (20 s), hits a rate limit or returns no text, Kino logs a warning and falls back to its own summary, so the dashboard keeps working. Another provider can be added with a Spring `@Component` implementing `com.kino.backend.ai.AiTextGenerator`.
+
+### gRPC API
+
+Besides REST, the backend exposes the same data over gRPC (contract in `src/main/proto/kino/v1/kino.proto`, Java code generated at build time):
+
+- `kino.v1.CatalogService`: `ListTrendingVideos` (optional `category`, `limit` 1-50) and `GetVideo`.
+- `kino.v1.InsightsService`: `GetTrendingInsights` (the same Kino IA analysis as `/api/ai/trending-insights`).
+- `kino.v1.LiveService`: `ListLiveStreams` and `WatchLiveStreams`, a server-streaming call that pushes a live snapshot every `interval_seconds` (1-60) up to `max_updates`.
+
+Patterns applied: versioned package (`kino.v1`), unary and server-streaming calls, errors mapped to gRPC status codes (`INVALID_ARGUMENT`, `NOT_FOUND`, `FAILED_PRECONDITION`…), a logging interceptor that records method, status and latency, the standard `grpc.health.v1` health service, server reflection (works with `grpcurl` and Postman), message size limits, keepalive and graceful shutdown tied to the Spring lifecycle.
+
+The gRPC server is disabled by default (`GRPC_ENABLED=false`) because Render's free web service exposes only the HTTP port; enable it locally or on a host that exposes `GRPC_PORT` (default `9090`):
+
+```powershell
+grpcurl -plaintext localhost:9090 list
+grpcurl -plaintext -d '{"limit":5}' localhost:9090 kino.v1.CatalogService/ListTrendingVideos
+grpcurl -plaintext -d '{"interval_seconds":5,"max_updates":3}' localhost:9090 kino.v1.LiveService/WatchLiveStreams
+```
+
+`protoc` cannot read Windows paths with non-ASCII characters (for example `Programación`). If the build fails with `PROTOC FAILED ... directory does not exist`, map the folder to a drive letter and build from there: `subst K: "C:\path\Kino_Streaming"`, then `cd K:ackend` and `mvn spring-boot:run`. Docker and Render are not affected.
+
+### Demo content
+
+`src/main/resources/db/supabase/seed-demo-content.sql` loads 16 videos from 5 creators across every category, with view counts, publication dates (some in the last 7 days, so they appear as rising) and viewer interactions, so the dashboard, the recommendations and Kino IA have data to analyze. Videos are public sample clips (Blender open movies, MDN, test-videos.co.uk, samplelib) and thumbnails come from picsum.photos. Run it in the Supabase SQL Editor; it is idempotent. Demo accounts use `@demo.kino.app` emails and an unusable password hash, so nobody can sign in with them. `remove-demo-content.sql` deletes everything it created.
 
 ## Error format
 
