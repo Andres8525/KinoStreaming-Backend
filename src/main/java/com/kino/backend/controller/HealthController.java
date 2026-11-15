@@ -1,5 +1,7 @@
 package com.kino.backend.controller;
 
+import com.kino.backend.ai.AiProperties;
+import com.kino.backend.ai.AiTextGenerator;
 import com.kino.backend.config.CorsOrigins;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -21,12 +23,17 @@ public class HealthController {
     private final JdbcTemplate jdbcTemplate;
     private final CorsOrigins corsOrigins;
     private final ObjectProvider<BuildProperties> buildProperties;
+    private final AiProperties aiProperties;
+    private final ObjectProvider<AiTextGenerator> aiTextGenerators;
 
     public HealthController(JdbcTemplate jdbcTemplate, CorsOrigins corsOrigins,
-                            ObjectProvider<BuildProperties> buildProperties) {
+                            ObjectProvider<BuildProperties> buildProperties, AiProperties aiProperties,
+                            ObjectProvider<AiTextGenerator> aiTextGenerators) {
         this.jdbcTemplate = jdbcTemplate;
         this.corsOrigins = corsOrigins;
         this.buildProperties = buildProperties;
+        this.aiProperties = aiProperties;
+        this.aiTextGenerators = aiTextGenerators;
     }
 
     @GetMapping
@@ -38,7 +45,20 @@ public class HealthController {
         BuildProperties build = buildProperties.getIfAvailable();
         body.put("build", build == null ? "unknown" : build.getTime());
         body.put("cors", Map.of("origins", corsOrigins.origins(), "patterns", corsOrigins.patterns()));
+        body.put("ai", aiStatus());
         return body;
+    }
+
+    private Map<String, Object> aiStatus() {
+        AiTextGenerator generator = aiTextGenerators.getIfAvailable();
+        boolean apiKeyConfigured = aiProperties.apiKey() != null && !aiProperties.apiKey().isBlank();
+        Map<String, Object> ai = new LinkedHashMap<>();
+        ai.put("enabled", aiProperties.enabled());
+        ai.put("provider", generator == null ? aiProperties.provider() : generator.name());
+        ai.put("model", generator == null ? null : generator.model());
+        ai.put("apiKeyConfigured", apiKeyConfigured);
+        ai.put("active", aiProperties.enabled() && generator != null && apiKeyConfigured);
+        return ai;
     }
 
     private String databaseStatus() {

@@ -370,7 +370,10 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.database").value("UP"))
                 .andExpect(jsonPath("$.cors.origins[0]").value("http://localhost:4200"))
                 .andExpect(jsonPath("$.cors.patterns").isArray())
-                .andExpect(jsonPath("$.build").exists());
+                .andExpect(jsonPath("$.build").exists())
+                .andExpect(jsonPath("$.ai.enabled").value(false))
+                .andExpect(jsonPath("$.ai.apiKeyConfigured").value(false))
+                .andExpect(jsonPath("$.ai.active").value(false));
     }
 
     @Test

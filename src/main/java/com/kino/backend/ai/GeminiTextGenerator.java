@@ -1,8 +1,6 @@
 package com.kino.backend.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.kino.backend.dto.CategoryInsight;
-import com.kino.backend.dto.VideoResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +50,7 @@ public class GeminiTextGenerator implements AiTextGenerator {
             return Optional.empty();
         }
         Map<String, Object> body = Map.of(
-                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", prompt(snapshot))))),
+                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", TrendingPrompt.full(snapshot))))),
                 "generationConfig", Map.of("temperature", 0.7, "maxOutputTokens", 1024));
 
         JsonNode response = restClient.post()
@@ -65,7 +63,8 @@ public class GeminiTextGenerator implements AiTextGenerator {
         return Optional.ofNullable(extractText(response));
     }
 
-    String model() {
+    @Override
+    public String model() {
         return properties.model() == null || properties.model().isBlank() ? DEFAULT_MODEL : properties.model().trim();
     }
 
@@ -79,40 +78,6 @@ public class GeminiTextGenerator implements AiTextGenerator {
                 .collect(Collectors.joining())
                 .trim();
         return text.isEmpty() ? null : text;
-    }
-
-    static String prompt(TrendingSnapshot snapshot) {
-        StringBuilder prompt = new StringBuilder()
-                .append("Eres el analista de Kino Streaming, una plataforma de cine y video independiente. ")
-                .append("Con los datos siguientes, escribe en español un resumen breve para la portada ")
-                .append("(máximo 3 frases, tono cercano, sin markdown ni listas) que recomiende qué ver ahora ")
-                .append("y destaque lo más visto. No inventes títulos ni cifras que no aparezcan en los datos.\n\n")
-                .append("Reproducciones totales: ").append(snapshot.totalViews()).append('\n')
-                .append("Transmisiones en vivo ahora: ").append(snapshot.liveNow()).append('\n')
-                .append("Lo más visto:\n").append(videoLines(snapshot.mostWatched()))
-                .append("Novedades en ascenso (últimos 7 días):\n").append(videoLines(snapshot.rising()))
-                .append("Categorías con más vistas:\n").append(categoryLines(snapshot.topCategories()));
-        return prompt.toString();
-    }
-
-    private static String videoLines(List<VideoResponse> videos) {
-        if (videos.isEmpty()) {
-            return "- (ninguno)\n";
-        }
-        return videos.stream()
-                .map(video -> "- \"" + video.title() + "\" de " + video.creator().displayName() + ", "
-                        + video.viewCount() + " vistas" + (video.tags().isEmpty() ? "" : ", " + video.tags().get(0)))
-                .collect(Collectors.joining("\n", "", "\n"));
-    }
-
-    private static String categoryLines(List<CategoryInsight> categories) {
-        if (categories.isEmpty()) {
-            return "- (ninguna)\n";
-        }
-        return categories.stream()
-                .map(category -> "- " + category.category() + ": " + category.totalViews() + " vistas en "
-                        + category.videoCount() + " videos")
-                .collect(Collectors.joining("\n", "", "\n"));
     }
 
     private static String baseUrl(AiProperties properties) {

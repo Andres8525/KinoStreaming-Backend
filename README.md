@@ -131,13 +131,24 @@ Before deploying this version on an existing database, run these migrations in t
 
 `source` is `kino-analytics` while no AI provider is connected (the summary is written from Kino's statistics) and `ai` when the summary comes from the AI.
 
-**Google Gemini is built in** (`GeminiTextGenerator`). To turn it on:
+Kino ships two AI clients; pick one with `AI_PROVIDER`:
 
-1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
-2. In the Render dashboard (or `.env` locally) set `AI_ENABLED=true`, `AI_PROVIDER=gemini` and `AI_API_KEY=<your key>`. Optionally `AI_MODEL` (default `gemini-2.5-flash`) and `AI_BASE_URL` (default `https://generativelanguage.googleapis.com/v1beta`). Never commit the key: only the backend uses it, the frontend never sees it.
-3. Save; Render redeploys. `GET /api/ai/trending-insights` then returns `source: "ai"` (results are cached for `AI_CACHE_TTL`).
+| `AI_PROVIDER` | Client | Default `AI_MODEL` | Key from |
+|---|---|---|---|
+| `gemini` | Google Gemini API | `gemini-2.5-flash` | https://aistudio.google.com/apikey |
+| `groq` | OpenAI-compatible | `llama-3.3-70b-versatile` | https://console.groq.com/keys |
+| `openrouter` | OpenAI-compatible | `meta-llama/llama-3.3-70b-instruct:free` | https://openrouter.ai/keys |
+| `mistral` | OpenAI-compatible | `mistral-small-latest` | https://console.mistral.ai/api-keys |
+| `github` | OpenAI-compatible (GitHub Models) | `openai/gpt-4o-mini` | GitHub personal access token with `models:read` |
+| `cerebras` | OpenAI-compatible | `llama-3.3-70b` | https://cloud.cerebras.ai |
+| `openai` | OpenAI-compatible | `gpt-4o-mini` | https://platform.openai.com/api-keys |
+| `openai-compatible` | Any `/chat/completions` API (Together, DeepSeek, Ollama…) | set `AI_MODEL` | set `AI_BASE_URL` too |
 
-If Gemini fails, times out (20 s) or returns no text, Kino logs a warning and falls back to its own summary, so the dashboard keeps working. Another provider can be added with a Spring `@Component` implementing `com.kino.backend.ai.AiTextGenerator`.
+To turn it on, set in the Render dashboard (or `.env` locally): `AI_ENABLED=true`, `AI_PROVIDER=<provider>` and `AI_API_KEY=<key>`. `AI_MODEL` and `AI_BASE_URL` are optional overrides (provider model names change over time; check the provider's model list if a call fails). Never commit the key: only the backend uses it, the frontend never sees it.
+
+`GET /api/health` reports `ai: { enabled, provider, model, apiKeyConfigured, active }` (never the key), so after saving the variables you can confirm that `active` is `true`. `GET /api/ai/trending-insights` then returns `source: "ai"`; results are cached for `AI_CACHE_TTL`.
+
+If the provider fails, times out (20 s), hits a rate limit or returns no text, Kino logs a warning and falls back to its own summary, so the dashboard keeps working. Another provider can be added with a Spring `@Component` implementing `com.kino.backend.ai.AiTextGenerator`.
 
 ## Error format
 
