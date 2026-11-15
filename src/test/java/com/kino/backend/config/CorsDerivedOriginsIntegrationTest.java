@@ -33,6 +33,16 @@ class CorsDerivedOriginsIntegrationTest {
     }
 
     @Test
+    void alwaysAllowsTheRenamedKinoVercelProject() throws Exception {
+        for (String origin : new String[] {"https://kino-streaming-frontend.vercel.app",
+                "https://kino-streaming-frontend-a1b2c3-andres8525s-projects.vercel.app"}) {
+            preflight(origin)
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Access-Control-Allow-Origin", origin));
+        }
+    }
+
+    @Test
     void stillRejectsOtherVercelProjects() throws Exception {
         preflight("https://another-project.vercel.app").andExpect(status().isForbidden());
     }

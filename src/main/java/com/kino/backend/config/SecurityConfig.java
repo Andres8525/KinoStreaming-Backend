@@ -33,15 +33,20 @@ public class SecurityConfig {
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "Accept");
     private static final List<String> EXPOSED_HEADERS = List.of("Authorization");
 
+    static final String KINO_FRONTEND_ORIGINS =
+            "https://kino-streaming-frontend.vercel.app,https://kino-streamingg-frontend.vercel.app";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final CorsOrigins corsOrigins;
 
     public SecurityConfig(
             @Value("${kino.cors.allowed-origins:http://localhost:4200}") String allowedOrigins,
+            @Value("${kino.cors.additional-origins:" + KINO_FRONTEND_ORIGINS + "}") String additionalOrigins,
             @Value("${kino.cors.allow-vercel-previews:true}") boolean allowVercelPreviews,
             @Value("${kino.cors.allow-localhost:true}") boolean allowLocalhost) {
-        this.corsOrigins = CorsOrigins.parse(allowedOrigins).withDerivedOrigins(allowVercelPreviews, allowLocalhost);
+        this.corsOrigins = CorsOrigins.parse(allowedOrigins + "," + additionalOrigins)
+                .withDerivedOrigins(allowVercelPreviews, allowLocalhost);
         if (corsOrigins.isEmpty()) {
             LOGGER.warn("CORS_ALLOWED_ORIGINS is empty: browsers on other domains will not be able to call the API");
         } else {
