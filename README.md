@@ -135,7 +135,7 @@ Kino ships two AI clients; pick one with `AI_PROVIDER`:
 
 | `AI_PROVIDER` | Client | Default `AI_MODEL` | Key from |
 |---|---|---|---|
-| `gemini` | Google Gemini API | `gemini-2.5-flash` | https://aistudio.google.com/apikey |
+| `gemini` | Google Gemini API | `gemini-flash-lite-latest` | https://aistudio.google.com/apikey |
 | `groq` | OpenAI-compatible | `llama-3.3-70b-versatile` | https://console.groq.com/keys |
 | `openrouter` | OpenAI-compatible | `meta-llama/llama-3.3-70b-instruct:free` | https://openrouter.ai/keys |
 | `mistral` | OpenAI-compatible | `mistral-small-latest` | https://console.mistral.ai/api-keys |

@@ -19,7 +19,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnProperty(prefix = "kino.ai", name = "provider", havingValue = "gemini")
 public class GeminiTextGenerator implements AiTextGenerator {
     static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-    static final String DEFAULT_MODEL = "gemini-2.5-flash";
+    static final String DEFAULT_MODEL = "gemini-flash-lite-latest";
     private static final int CONNECT_TIMEOUT_MS = 5_000;
     private static final int READ_TIMEOUT_MS = 20_000;
 

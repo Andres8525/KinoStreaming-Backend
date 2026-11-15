@@ -38,7 +38,7 @@ class GeminiTextGeneratorTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         GeminiTextGenerator generator = new GeminiTextGenerator(builder.build(), properties("test-key", ""));
 
-        server.expect(requestTo(GeminiTextGenerator.DEFAULT_BASE_URL + "/models/gemini-2.5-flash:generateContent"))
+        server.expect(requestTo(GeminiTextGenerator.DEFAULT_BASE_URL + "/models/gemini-flash-lite-latest:generateContent"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("x-goog-api-key", "test-key"))
                 .andExpect(jsonPath("$.contents[0].parts[0].text", Matchers.containsString("Fenómeno de la semana")))
@@ -66,7 +66,7 @@ class GeminiTextGeneratorTest {
     void returnsNothingWhenGeminiSendsNoText() {
         RestClient.Builder builder = RestClient.builder().baseUrl(GeminiTextGenerator.DEFAULT_BASE_URL);
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo(GeminiTextGenerator.DEFAULT_BASE_URL + "/models/gemini-2.5-flash:generateContent"))
+        server.expect(requestTo(GeminiTextGenerator.DEFAULT_BASE_URL + "/models/gemini-flash-lite-latest:generateContent"))
                 .andRespond(withSuccess("{\"candidates\":[{\"finishReason\":\"SAFETY\"}]}", MediaType.APPLICATION_JSON));
 
         assertTrue(new GeminiTextGenerator(builder.build(), properties("test-key", "")).summarizeTrends(SNAPSHOT).isEmpty());
