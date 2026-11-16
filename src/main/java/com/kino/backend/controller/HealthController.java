@@ -3,6 +3,9 @@ package com.kino.backend.controller;
 import com.kino.backend.ai.AiProperties;
 import com.kino.backend.ai.AiTextGenerator;
 import com.kino.backend.config.CorsOrigins;
+import com.kino.backend.realtime.KinoRealtimeHub;
+import com.kino.backend.worker.AiWorker;
+import com.kino.backend.worker.InsightsRefreshWorker;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,15 +28,22 @@ public class HealthController {
     private final ObjectProvider<BuildProperties> buildProperties;
     private final AiProperties aiProperties;
     private final ObjectProvider<AiTextGenerator> aiTextGenerators;
+    private final KinoRealtimeHub realtimeHub;
+    private final AiWorker aiWorker;
+    private final InsightsRefreshWorker insightsRefreshWorker;
 
     public HealthController(JdbcTemplate jdbcTemplate, CorsOrigins corsOrigins,
                             ObjectProvider<BuildProperties> buildProperties, AiProperties aiProperties,
-                            ObjectProvider<AiTextGenerator> aiTextGenerators) {
+                            ObjectProvider<AiTextGenerator> aiTextGenerators, KinoRealtimeHub realtimeHub,
+                            AiWorker aiWorker, InsightsRefreshWorker insightsRefreshWorker) {
         this.jdbcTemplate = jdbcTemplate;
         this.corsOrigins = corsOrigins;
         this.buildProperties = buildProperties;
         this.aiProperties = aiProperties;
         this.aiTextGenerators = aiTextGenerators;
+        this.realtimeHub = realtimeHub;
+        this.aiWorker = aiWorker;
+        this.insightsRefreshWorker = insightsRefreshWorker;
     }
 
     @GetMapping
@@ -46,6 +56,8 @@ public class HealthController {
         body.put("build", build == null ? "unknown" : build.getTime());
         body.put("cors", Map.of("origins", corsOrigins.origins(), "patterns", corsOrigins.patterns()));
         body.put("ai", aiStatus());
+        body.put("realtime", Map.of("path", KinoRealtimeHub.PATH, "connections", realtimeHub.connectionCount()));
+        body.put("workers", Map.of("ai", aiWorker.status(), "insightsRefresh", insightsRefreshWorker.status()));
         return body;
     }
 

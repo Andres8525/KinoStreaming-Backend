@@ -150,6 +150,33 @@ To turn it on, set in the Render dashboard (or `.env` locally): `AI_ENABLED=true
 
 If the provider fails, times out (20 s), hits a rate limit or returns no text, Kino logs a warning and falls back to its own summary, so the dashboard keeps working. Another provider can be added with a Spring `@Component` implementing `com.kino.backend.ai.AiTextGenerator`.
 
+#### Chat and recommendations
+
+- `POST /api/ai/chat` (public) with `{ "messages": [{ "role": "user" | "assistant", "content": "..." }] }` answers as Kino IA: `{ reply, source, suggestions, generatedAt }`. The last message must come from the user; only the last 12 messages are sent to the model, each one up to 1000 characters. The prompt includes the current statistics and the 60 most watched videos, so the model only recommends real titles; `suggestions` are the catalog videos mentioned in the reply. Without an AI provider (or if it fails), Kino answers with built-in rules: most watched, new releases, a category ("Recomiéndame un documental"), live streams or general recommendations.
+- `GET /api/ai/recommendations?category=Documental` (public) returns `{ category, source, summary, recommendations: [{ video, reason, score }], generatedAt }`. Videos are ranked by popularity plus a bonus for new releases (7 and 30 days); the AI writes the summary when it is active. Results are cached per category for `AI_CACHE_TTL`.
+- Each client can ask `AI_CHAT_REQUESTS_PER_MINUTE` questions per minute (12 by default, per user when signed in and per IP otherwise); above that the API answers `429`.
+
+#### Workers
+
+| Worker | What it does | Settings |
+|---|---|---|
+| `AiWorker` | Bounded thread pool (`kino-ai-worker-*`) that answers chat questions off the request threads. A question that takes longer than the timeout gets the built-in answer; when the queue is full the API answers `503`. | `AI_WORKER_THREADS` (2), `AI_WORKER_QUEUE` (50), `AI_WORKER_TIMEOUT` (`PT25S`) |
+| `InsightsRefreshWorker` | Scheduled job that, while at least one browser is connected over WebSocket, recomputes the trending statistics (reusing the cached AI summary, so it does not spend AI quota) and pushes them when they change. | `INSIGHTS_REFRESH_ENABLED` (true), `INSIGHTS_REFRESH_INTERVAL` (`PT20S`) |
+
+#### WebSocket
+
+`/ws/kino` (for example `wss://kino-backend-alq2.onrender.com/ws/kino`) is a plain WebSocket that accepts the same origins as CORS. Every message is JSON `{ "type", "requestId"?, "data" }`:
+
+| Direction | `type` | Payload |
+|---|---|---|
+| server → client | `welcome` | `{ features, timestamp }` right after connecting |
+| server → client | `insights` | the same body as `GET /api/ai/trending-insights`, on connect and whenever the statistics change |
+| client → server | `ping` | answered with `pong` (the frontend sends one every 25 s so proxies keep the socket open) |
+| client → server | `insights` | asks for the current insights |
+| client → server | `chat` | `{ "type": "chat", "requestId": "abc", "messages": [...] }`, answered with `chat-reply` (`data` is the chat response) or `chat-error` (`data.message`) with the same `requestId` |
+
+`GET /api/health` also reports `realtime: { path, connections }` and `workers: { ai: { threads, active, queued, completed }, insightsRefresh: { enabled, lastRun, broadcasts } }`.
+
 ### gRPC API
 
 Besides REST, the backend exposes the same data over gRPC (contract in `src/main/proto/kino/v1/kino.proto`, Java code generated at build time):
