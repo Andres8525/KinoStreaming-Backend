@@ -1,11 +1,13 @@
 package com.kino.backend.controller;
 
+import com.kino.backend.ai.AiRateLimitException;
 import com.kino.backend.dto.ApiError;
 import com.kino.backend.service.FieldConflictException;
 import com.kino.backend.service.FieldValidationException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,17 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleFieldValidation(FieldValidationException exception) {
         return error(HttpStatus.BAD_REQUEST, "Revisa los campos enviados",
                 Map.of(exception.getField(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(AiRateLimitException.class)
+    public ResponseEntity<ApiError> handleAiRateLimit(AiRateLimitException exception) {
+        return error(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RejectedExecutionException.class)
+    public ResponseEntity<ApiError> handleBusyWorkers() {
+        return error(HttpStatus.SERVICE_UNAVAILABLE,
+                "Kino IA está atendiendo muchas preguntas. Inténtalo de nuevo en unos segundos.", Map.of());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
