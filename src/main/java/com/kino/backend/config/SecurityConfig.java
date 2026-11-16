@@ -108,6 +108,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/live/*/viewers", "/api/live/*/viewers/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/live", "/api/live/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ai/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/chat").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/videos/*/views").authenticated()
                         .requestMatchers("/api/creator/**").authenticated()
                         .requestMatchers("/api/feed/**").authenticated()
