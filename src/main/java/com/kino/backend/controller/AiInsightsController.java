@@ -7,6 +7,7 @@ import com.kino.backend.dto.AiChatRequest;
 import com.kino.backend.dto.AiChatResponse;
 import com.kino.backend.dto.AiRecommendationsResponse;
 import com.kino.backend.dto.TrendingInsightsResponse;
+import com.kino.backend.realtime.KinoRealtimeHub;
 import com.kino.backend.worker.AiWorker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,19 +30,31 @@ public class AiInsightsController {
     private final AiRecommendationService recommendationService;
     private final AiWorker aiWorker;
     private final AiRateLimiter rateLimiter;
+    private final KinoRealtimeHub realtimeHub;
 
     public AiInsightsController(TrendingInsightsService trendingInsightsService,
                                 AiRecommendationService recommendationService, AiWorker aiWorker,
-                                AiRateLimiter rateLimiter) {
+                                AiRateLimiter rateLimiter, KinoRealtimeHub realtimeHub) {
         this.trendingInsightsService = trendingInsightsService;
         this.recommendationService = recommendationService;
         this.aiWorker = aiWorker;
         this.rateLimiter = rateLimiter;
+        this.realtimeHub = realtimeHub;
     }
 
     @GetMapping("/trending-insights")
     public TrendingInsightsResponse trendingInsights() {
         return trendingInsightsService.insights();
+    }
+
+    @PostMapping("/analysis")
+    public CompletableFuture<TrendingInsightsResponse> generateAnalysis(HttpServletRequest httpRequest,
+                                                                        Principal principal) {
+        rateLimiter.acquire(clientKey(httpRequest, principal));
+        return aiWorker.run(trendingInsightsService::regenerate).thenApply(insights -> {
+            realtimeHub.broadcast("insights", insights);
+            return insights;
+        });
     }
 
     @GetMapping("/recommendations")
@@ -54,7 +67,11 @@ public class AiInsightsController {
     @PostMapping("/chat")
     public CompletableFuture<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request,
                                                   HttpServletRequest httpRequest, Principal principal) {
-        rateLimiter.acquire(principal == null ? "ip:" + httpRequest.getRemoteAddr() : "user:" + principal.getName());
+        rateLimiter.acquire(clientKey(httpRequest, principal));
         return aiWorker.chat(request.messages());
+    }
+
+    private static String clientKey(HttpServletRequest httpRequest, Principal principal) {
+        return principal == null ? "ip:" + httpRequest.getRemoteAddr() : "user:" + principal.getName();
     }
 }

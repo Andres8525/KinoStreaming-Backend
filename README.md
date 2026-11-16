@@ -154,7 +154,8 @@ If the provider fails, times out (20 s), hits a rate limit or returns no text, K
 
 - `POST /api/ai/chat` (public) with `{ "messages": [{ "role": "user" | "assistant", "content": "..." }] }` answers as Kino IA: `{ reply, source, suggestions, generatedAt }`. The last message must come from the user; only the last 12 messages are sent to the model, each one up to 1000 characters. The prompt includes the current statistics and the 60 most watched videos, so the model only recommends real titles; `suggestions` are the catalog videos mentioned in the reply. Without an AI provider (or if it fails), Kino answers with built-in rules: most watched, new releases, a category ("Recomiéndame un documental"), live streams or general recommendations.
 - `GET /api/ai/recommendations?category=Documental` (public) returns `{ category, source, summary, recommendations: [{ video, reason, score }], generatedAt }`. Videos are ranked by popularity plus a bonus for new releases (7 and 30 days); the AI writes the summary when it is active. Results are cached per category for `AI_CACHE_TTL`.
-- Each client can ask `AI_CHAT_REQUESTS_PER_MINUTE` questions per minute (12 by default, per user when signed in and per IP otherwise); above that the API answers `429`.
+- `POST /api/ai/analysis` (public, no body) regenerates the Kino IA analysis right away instead of waiting for `AI_CACHE_TTL`: it recomputes the statistics, asks the AI for a new summary and pushes the result to every browser connected to `/ws/kino`. Calls within 30 seconds of the last regeneration return the current analysis, so repeated clicks do not spend AI quota.
+- Each client can ask `AI_CHAT_REQUESTS_PER_MINUTE` questions per minute (12 by default, per user when signed in and per IP otherwise, shared by chat and analysis); above that the API answers `429`.
 
 #### Workers
 

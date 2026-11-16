@@ -90,6 +90,23 @@ class AiChatIntegrationTest {
     }
 
     @Test
+    void generatesAFreshAnalysisOnDemand() throws Exception {
+        MvcResult pending = mockMvc.perform(post("/api/ai/analysis")
+                        .with(request -> {
+                            request.setRemoteAddr("10.0.0.4");
+                            return request;
+                        }))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(pending))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("kino-analytics"))
+                .andExpect(jsonPath("$.summary").isNotEmpty())
+                .andExpect(jsonPath("$.totalViews").isNumber());
+    }
+
+    @Test
     void returnsRecommendationsForACategory() throws Exception {
         mockMvc.perform(get("/api/ai/recommendations").param("category", "Documental"))
                 .andExpect(status().isOk())
