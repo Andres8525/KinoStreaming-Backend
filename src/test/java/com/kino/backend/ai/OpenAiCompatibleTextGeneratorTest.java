@@ -8,6 +8,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.kino.backend.dto.CategoryInsight;
+import com.kino.backend.dto.ChatMessage;
 import com.kino.backend.dto.CreatorSummaryResponse;
 import com.kino.backend.dto.VideoResponse;
 import java.math.BigDecimal;
@@ -52,6 +53,26 @@ class OpenAiCompatibleTextGeneratorTest {
                         """, MediaType.APPLICATION_JSON));
 
         assertThat(generator.summarizeTrends(SNAPSHOT)).contains("Hoy todos ven Fenómeno de la semana.");
+        server.verify();
+    }
+
+    @Test
+    void sendsTheChatAfterTheSystemMessage() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        OpenAiCompatibleTextGenerator generator = new OpenAiCompatibleTextGenerator(builder.build(),
+                properties("groq", "test-key", "", ""));
+
+        server.expect(requestTo("https://api.groq.com/openai/v1/chat/completions"))
+                .andExpect(jsonPath("$.messages[0].content").value("Eres Kino IA"))
+                .andExpect(jsonPath("$.messages[1].role").value("user"))
+                .andExpect(jsonPath("$.messages[2].role").value("assistant"))
+                .andRespond(withSuccess("""
+                        {"choices":[{"message":{"role":"assistant","content":"Prueba Raíces de agua."}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(generator.chat("Eres Kino IA", List.of(ChatMessage.user("Hola"), ChatMessage.assistant("¡Hola!"))))
+                .contains("Prueba Raíces de agua.");
         server.verify();
     }
 

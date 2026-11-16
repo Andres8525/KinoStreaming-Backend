@@ -9,6 +9,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.kino.backend.dto.CategoryInsight;
+import com.kino.backend.dto.ChatMessage;
 import com.kino.backend.dto.CreatorSummaryResponse;
 import com.kino.backend.dto.VideoResponse;
 import java.math.BigDecimal;
@@ -70,6 +71,34 @@ class GeminiTextGeneratorTest {
                 .andRespond(withSuccess("{\"candidates\":[{\"finishReason\":\"SAFETY\"}]}", MediaType.APPLICATION_JSON));
 
         assertTrue(new GeminiTextGenerator(builder.build(), properties("test-key", "")).summarizeTrends(SNAPSHOT).isEmpty());
+    }
+
+    @Test
+    void sendsTheConversationWithTheSystemInstructionsAndModelRoles() {
+        RestClient.Builder builder = RestClient.builder().baseUrl(GeminiTextGenerator.DEFAULT_BASE_URL);
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        GeminiTextGenerator generator = new GeminiTextGenerator(builder.build(), properties("test-key", ""));
+
+        server.expect(requestTo(GeminiTextGenerator.DEFAULT_BASE_URL + "/models/gemini-flash-lite-latest:generateContent"))
+                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value("Eres Kino IA"))
+                .andExpect(jsonPath("$.contents[0].role").value("user"))
+                .andExpect(jsonPath("$.contents[1].role").value("model"))
+                .andExpect(jsonPath("$.contents[2].parts[0].text").value("¿Y de música?"))
+                .andRespond(withSuccess("""
+                        {"candidates":[{"content":{"parts":[{"text":"Mira Sesiones en la azotea."}]}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertEquals(Optional.of("Mira Sesiones en la azotea."), generator.chat("Eres Kino IA", List.of(
+                ChatMessage.user("¿Qué veo hoy?"), ChatMessage.assistant("Te recomiendo Sintel."),
+                ChatMessage.user("¿Y de música?"))));
+        server.verify();
+    }
+
+    @Test
+    void doesNotChatWithoutAnApiKey() {
+        GeminiTextGenerator generator = new GeminiTextGenerator(RestClient.create(), properties("", ""));
+
+        assertTrue(generator.chat("Eres Kino IA", List.of(ChatMessage.user("Hola"))).isEmpty());
     }
 
     private static AiProperties properties(String apiKey, String model) {

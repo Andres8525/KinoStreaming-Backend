@@ -1,6 +1,7 @@
 package com.kino.backend.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.kino.backend.dto.ChatMessage;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,14 +46,29 @@ public class GeminiTextGenerator implements AiTextGenerator {
 
     @Override
     public Optional<String> summarizeTrends(TrendingSnapshot snapshot) {
+        return generate(Map.of(
+                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", TrendingPrompt.full(snapshot))))),
+                "generationConfig", Map.of("temperature", 0.7, "maxOutputTokens", 1024)));
+    }
+
+    @Override
+    public Optional<String> chat(String instructions, List<ChatMessage> conversation) {
+        List<Map<String, Object>> contents = conversation.stream()
+                .map(message -> Map.<String, Object>of(
+                        "role", message.fromUser() ? "user" : "model",
+                        "parts", List.of(Map.of("text", message.content()))))
+                .toList();
+        return generate(Map.of(
+                "systemInstruction", Map.of("parts", List.of(Map.of("text", instructions))),
+                "contents", contents,
+                "generationConfig", Map.of("temperature", 0.6, "maxOutputTokens", 1024)));
+    }
+
+    private Optional<String> generate(Map<String, Object> body) {
         if (properties.apiKey() == null || properties.apiKey().isBlank()) {
-            LOGGER.warn("AI_PROVIDER=gemini but AI_API_KEY is empty; using the built-in summary");
+            LOGGER.warn("AI_PROVIDER=gemini but AI_API_KEY is empty; using the built-in answer");
             return Optional.empty();
         }
-        Map<String, Object> body = Map.of(
-                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", TrendingPrompt.full(snapshot))))),
-                "generationConfig", Map.of("temperature", 0.7, "maxOutputTokens", 1024));
-
         JsonNode response = restClient.post()
                 .uri("/models/{model}:generateContent", model())
                 .header("x-goog-api-key", properties.apiKey())

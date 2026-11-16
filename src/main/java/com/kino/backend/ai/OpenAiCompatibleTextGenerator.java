@@ -1,6 +1,8 @@
 package com.kino.backend.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.kino.backend.dto.ChatMessage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,21 +50,33 @@ public class OpenAiCompatibleTextGenerator implements AiTextGenerator {
 
     @Override
     public Optional<String> summarizeTrends(TrendingSnapshot snapshot) {
+        return complete(List.of(
+                Map.of("role", "system", "content", TrendingPrompt.SYSTEM_INSTRUCTIONS),
+                Map.of("role", "user", "content", TrendingPrompt.data(snapshot))), 0.7, 400);
+    }
+
+    @Override
+    public Optional<String> chat(String instructions, List<ChatMessage> conversation) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", instructions));
+        conversation.forEach(message -> messages.add(Map.of("role", message.role(), "content", message.content())));
+        return complete(messages, 0.6, 600);
+    }
+
+    private Optional<String> complete(List<Map<String, String>> messages, double temperature, int maxTokens) {
         if (properties.apiKey() == null || properties.apiKey().isBlank()) {
-            LOGGER.warn("AI_PROVIDER={} but AI_API_KEY is empty; using the built-in summary", name());
+            LOGGER.warn("AI_PROVIDER={} but AI_API_KEY is empty; using the built-in answer", name());
             return Optional.empty();
         }
         if (baseUrl().isEmpty() || model().isEmpty()) {
-            LOGGER.warn("AI_PROVIDER={} needs AI_BASE_URL and AI_MODEL; using the built-in summary", name());
+            LOGGER.warn("AI_PROVIDER={} needs AI_BASE_URL and AI_MODEL; using the built-in answer", name());
             return Optional.empty();
         }
         Map<String, Object> body = Map.of(
                 "model", model(),
-                "messages", List.of(
-                        Map.of("role", "system", "content", TrendingPrompt.SYSTEM_INSTRUCTIONS),
-                        Map.of("role", "user", "content", TrendingPrompt.data(snapshot))),
-                "temperature", 0.7,
-                "max_tokens", 400);
+                "messages", messages,
+                "temperature", temperature,
+                "max_tokens", maxTokens);
 
         JsonNode response = restClient.post()
                 .uri(baseUrl() + "/chat/completions")

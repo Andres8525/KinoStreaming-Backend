@@ -1,5 +1,7 @@
 package com.kino.backend.ai;
 
+import com.kino.backend.dto.ChatMessage;
+import java.util.List;
 import java.util.Optional;
 
 public interface AiTextGenerator {
@@ -10,4 +12,8 @@ public interface AiTextGenerator {
     }
 
     Optional<String> summarizeTrends(TrendingSnapshot snapshot);
+
+    default Optional<String> chat(String instructions, List<ChatMessage> conversation) {
+        return Optional.empty();
+    }
 }
