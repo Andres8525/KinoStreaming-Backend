@@ -58,16 +58,27 @@ public class TrendingInsightsService {
         if (cached != null && cached.expiresAt().isAfter(now)) {
             return cached.response();
         }
-        TrendingInsightsResponse response = analyze(now);
-        cache.set(new CachedInsights(response, now.plus(properties.cacheTtl())));
-        return response;
+        return analyze(now, null);
+    }
+
+    @Transactional(readOnly = true)
+    public TrendingInsightsResponse refreshStatistics() {
+        Instant now = clock.instant();
+        CachedInsights cached = cache.get();
+        return analyze(now, cached != null && cached.expiresAt().isAfter(now) ? cached : null);
+    }
+
+    public TrendingSnapshot snapshot() {
+        TrendingInsightsResponse response = insights();
+        return new TrendingSnapshot(response.mostWatched(), response.rising(), response.topCategories(),
+                response.totalViews(), response.liveNow());
     }
 
     public void evictCache() {
         cache.set(null);
     }
 
-    private TrendingInsightsResponse analyze(Instant now) {
+    private TrendingInsightsResponse analyze(Instant now, CachedInsights previous) {
         List<VideoResponse> videos = videoRepository
                 .findAllByOrderByViewCountDescCreatedAtDesc(PageRequest.of(0, ANALYZED_VIDEOS)).stream()
                 .map(VideoResponse::from)
@@ -87,10 +98,17 @@ public class TrendingInsightsService {
         int liveNow = liveStreamRepository.findByStatusOrderByStartedAtDesc(LiveStreamStatus.LIVE).size();
 
         TrendingSnapshot snapshot = new TrendingSnapshot(mostWatched, rising, topCategories, totalViews, liveNow);
-        Optional<String> aiSummary = aiSummary(snapshot);
-        return new TrendingInsightsResponse(now, aiSummary.isPresent() ? SOURCE_AI : SOURCE_ANALYTICS,
+        boolean reuseAiSummary = previous != null && SOURCE_AI.equals(previous.response().source());
+        Optional<String> aiSummary = reuseAiSummary
+                ? Optional.of(previous.response().summary())
+                : previous != null ? Optional.empty() : aiSummary(snapshot);
+        TrendingInsightsResponse response = new TrendingInsightsResponse(now,
+                aiSummary.isPresent() ? SOURCE_AI : SOURCE_ANALYTICS,
                 aiSummary.orElseGet(() -> builtInSummary(snapshot)), mostWatched, rising, topCategories,
                 totalViews, liveNow);
+        Instant expiresAt = previous != null ? previous.expiresAt() : now.plus(properties.cacheTtl());
+        cache.set(new CachedInsights(response, expiresAt));
+        return response;
     }
 
     private Optional<String> aiSummary(TrendingSnapshot snapshot) {

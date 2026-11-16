@@ -97,6 +97,30 @@ class TrendingInsightsServiceTest {
     }
 
     @Test
+    void refreshesTheStatisticsWithoutAskingTheAiAgainWhileTheSummaryIsFresh() {
+        when(generator.summarizeTrends(any())).thenReturn(Optional.of("Resumen escrito por la IA."));
+        TrendingInsightsService service = service(true);
+        service.insights();
+        when(videoRepository.findAllByOrderByViewCountDescCreatedAtDesc(any(Pageable.class))).thenReturn(List.of(
+                video("Ruta andina", "Documental", 90)));
+
+        TrendingInsightsResponse refreshed = service.refreshStatistics();
+
+        assertEquals(90, refreshed.totalViews());
+        assertEquals("Resumen escrito por la IA.", refreshed.summary());
+        assertEquals(90, service.insights().totalViews());
+        verify(generator, times(1)).summarizeTrends(any());
+    }
+
+    @Test
+    void exposesTheCachedDataAsASnapshotForTheAssistant() {
+        TrendingSnapshot snapshot = service(false).snapshot();
+
+        assertEquals(52, snapshot.totalViews());
+        assertEquals("Ruta andina", snapshot.mostWatched().get(0).title());
+    }
+
+    @Test
     void explainsWhenThereIsNoActivityYet() {
         when(videoRepository.findAllByOrderByViewCountDescCreatedAtDesc(any(Pageable.class))).thenReturn(List.of());
 
