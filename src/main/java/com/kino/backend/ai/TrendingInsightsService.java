@@ -35,6 +35,7 @@ public class TrendingInsightsService {
     private static final int TOP_CATEGORIES_SIZE = 5;
     private static final Duration RISING_WINDOW = Duration.ofDays(7);
     private static final String NO_CATEGORY = "Sin categoría";
+    static final Duration REGENERATION_COOLDOWN = Duration.ofSeconds(30);
 
     private final VideoRepository videoRepository;
     private final LiveStreamRepository liveStreamRepository;
@@ -42,6 +43,7 @@ public class TrendingInsightsService {
     private final AiProperties properties;
     private final Clock clock = Clock.systemUTC();
     private final AtomicReference<CachedInsights> cache = new AtomicReference<>();
+    private final AtomicReference<Instant> lastRegeneration = new AtomicReference<>(Instant.EPOCH);
 
     public TrendingInsightsService(VideoRepository videoRepository, LiveStreamRepository liveStreamRepository,
                                    ObjectProvider<AiTextGenerator> aiTextGenerators, AiProperties properties) {
@@ -66,6 +68,18 @@ public class TrendingInsightsService {
         Instant now = clock.instant();
         CachedInsights cached = cache.get();
         return analyze(now, cached != null && cached.expiresAt().isAfter(now) ? cached : null);
+    }
+
+    @Transactional(readOnly = true)
+    public TrendingInsightsResponse regenerate() {
+        Instant now = clock.instant();
+        CachedInsights cached = cache.get();
+        Instant last = lastRegeneration.get();
+        if (cached != null && last.plus(REGENERATION_COOLDOWN).isAfter(now)) {
+            return cached.response();
+        }
+        lastRegeneration.set(now);
+        return analyze(now, null);
     }
 
     public TrendingSnapshot snapshot() {

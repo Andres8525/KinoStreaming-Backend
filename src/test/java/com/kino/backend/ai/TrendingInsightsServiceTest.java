@@ -113,6 +113,20 @@ class TrendingInsightsServiceTest {
     }
 
     @Test
+    void regeneratesTheAnalysisOnDemandButNotTwiceWithinTheCooldown() {
+        when(generator.summarizeTrends(any())).thenReturn(Optional.of("Primer análisis."), Optional.of("Análisis nuevo."));
+        TrendingInsightsService service = service(true);
+        service.insights();
+
+        TrendingInsightsResponse regenerated = service.regenerate();
+        TrendingInsightsResponse again = service.regenerate();
+
+        assertEquals("Análisis nuevo.", regenerated.summary());
+        assertEquals(regenerated, again);
+        verify(generator, times(2)).summarizeTrends(any());
+    }
+
+    @Test
     void exposesTheCachedDataAsASnapshotForTheAssistant() {
         TrendingSnapshot snapshot = service(false).snapshot();
 
